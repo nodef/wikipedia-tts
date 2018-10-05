@@ -1,0 +1,31 @@
+{
+  "name": "wikipedia-tts",
+  "version": "0.0.1",
+  "description": "Crawl Wikipedia pages and upload TTS to Youtube.",
+  "main": "index.js",
+  "scripts": {
+    "test": "exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wikipedia-tts/wikipedia-tts.git"
+  },
+  "keywords": [
+    "wikipedia",
+    "tts",
+    "wiki",
+    "text",
+    "speech",
+    "crawl",
+    "page",
+    "upload",
+    "youtube",
+    "merferry"
+  ],
+  "author": "wolfram77@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wikipedia-tts/wikipedia-tts/issues"
+  },
+  "homepage": "https://github.com/wikipedia-tts/wikipedia-tts#readme"
+}
