@@ -1,6 +1,6 @@
 const sqlite = require('sqlite');
 const youtup = require('youtup');
-const wiki = require('wikijs');
+const wiki = require('wikijs').default;
 const english = require('@wikipedia-tts/english');
 const path = require('path');
 
@@ -28,7 +28,8 @@ const YOUTUBE_RETRY = parseInt(E['YOUTUBE_RETRIES'], 10)||3;
 async function wikipediaTts(out, nam, o) {
   var o = o||{};
   var pag = await wiki().page(nam);
-  var [img, txt] = await [pag.summary(), pag.mainImage()];
+  var txt = await pag.content();
+  var img = await pag.mainImage();
   await english(out, txt, img, o.english);
   return pag;
 };
