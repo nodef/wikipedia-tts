@@ -40,10 +40,12 @@ function youtubeUpload(val, o) {
   o.auth = Object.assign({}, YOUTUBE_AUTH, o.auth);
   o.video = Object.assign({}, YOUTUBE_VIDEO, o.video);
   var v = o.video;
+  v.filepath = val.filepath;
   v.title = v.title.replace(/\${title}/g, val.title);
   v.description = v.description.replace(/\${title}/g, val.title);
   v.description = v.description.replace(/\${description}/g, val.description);
   v.tags = v.tags.replace(/\${tags}/g, val.tags).split(',');
+  console.log('youtubeUpload', o);
   return new Promise((fres, frej) => {
     youtup.upload(o, fres, frej);
   });
