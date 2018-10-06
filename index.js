@@ -52,11 +52,10 @@ function youtubeUpload(val, o) {
 // Upload page to Youtube.
 async function uploadPage(nam, o) {
   var o = Object.assign({output: OUTPUT}, o);
-  var pag = await wiki().page(nam);
-  var [sum, img, txt] = await [pag.summary(), pag.mainImage(), pag.content()];
   var out = path.join(o.output, nam+'.mp4');
+  var pag = await wikipediaTts(out, nam, o);
+  var sum = await pag.summary();
   var tags = nam.toLowerCase().split(/\W+/);
-  await english(out, txt, img, o.english);
   await youtubeUpload({filepath: out, title: nam, description: sum, tags}, o.youtube);
   return pag;
 };
@@ -107,3 +106,10 @@ async function crawl(db) {
   return row? await upload(row.title):null;
 };
 module.exports = wikipediaTts;
+wikipediaTts.uploadPage = uploadPage;
+wikipediaTts.setup = setup;
+wikipediaTts.add = add;
+wikipediaTts.remove = remove;
+wikipediaTts.update = update;
+wikipediaTts.upload = upload;
+wikipediaTts.crawl = crawl;
