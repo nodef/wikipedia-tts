@@ -1,6 +1,6 @@
 {
   "name": "wikipedia-tts",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Crawl Wikipedia pages and upload TTS to Youtube.",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,6 @@
   "dependencies": {
     "@wikipedia-tts/english": "^1.1.20",
     "sqlite": "^3.0.0",
-    "wikijs": "^4.8.1",
-    "youtup": "0.0.1"
+    "wikijs": "^4.8.1"
   }
 }
