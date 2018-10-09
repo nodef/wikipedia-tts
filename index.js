@@ -1,20 +1,16 @@
 const sqlite = require('sqlite');
-const youtup = require('youtup');
 const wiki = require('wikijs').default;
+const _ = require('lodash');
 const english = require('@wikipedia-tts/english');
 const path = require('path');
+const cp = require('child_process');
 
 
 // Global variables
 const E = process.env;
+process.chdir('C:\\Users\\wolfram\\.google');
 const DB = E['WIKIPEDIA_TTS_DB']||'crawl.db';
 const OUTPUT = E['WIKIPEDIA_TTS_OUTPUT']||'./';
-const YOUTUBE_AUTH = {
-  email: E['YOUTUBE_EMAIL']||'',
-  clientId: E['YOUTUBE_CLIENT_ID']||'',
-  clientSecret: E['YOUTUBE_CLIENT_SECRET']||'',
-  refreshToken: E['YOUTUBE_REFRESH_TOKEN']||''
-};
 const YOUTUBE_VIDEO = {
   title: E['YOUTUBE_VIDEO_TITLE']||'${title}',
   description: E['YOUTUBE_VIDEO_DESCRIPTION']||'${description}',
@@ -22,7 +18,23 @@ const YOUTUBE_VIDEO = {
   categoryId: 22
 };
 const YOUTUBE_RETRY = parseInt(E['YOUTUBE_RETRIES'], 10)||3;
+const CP = {
+  sync: true,
+  stdio: [0, 1, 2]
+};
 
+
+// Execute child process, return promise.
+function cpExec(cmd, o) {
+  o = Object.assign({}, CP, o);
+  if(o.sync) return Promise.resolve({stdout: cp.execSync(cmd, o)});
+  return new Promise((fres, frej) => {
+    cp.exec(cmd, o, (err, stdout, stderr) => {
+      if(err) frej(err);
+      else fres({stdout, stderr});
+    });
+  });
+};
 
 // Get TTS audio/video of wikipedia page.
 async function wikipediaTts(out, nam, o) {
@@ -37,18 +49,16 @@ async function wikipediaTts(out, nam, o) {
 // Upload file to Youtube.
 function youtubeUpload(val, o) {
   var o = Object.assign({retry: YOUTUBE_RETRY}, o);
-  o.auth = Object.assign({}, YOUTUBE_AUTH, o.auth);
   o.video = Object.assign({}, YOUTUBE_VIDEO, o.video);
   var v = o.video;
   v.filepath = val.filepath;
   v.title = v.title.replace(/\${title}/g, val.title);
   v.description = v.description.replace(/\${title}/g, val.title);
   v.description = v.description.replace(/\${description}/g, val.description);
-  v.tags = v.tags.replace(/\${tags}/g, val.tags).split(',');
-  console.log('youtubeUpload', o);
-  return new Promise((fres, frej) => {
-    youtup.upload(o, fres, frej);
-  });
+  v.description = _.escapeRegExp(v.description);
+  v.tags = v.tags.replace(/\${tags}/g, val.tags);
+  console.log(`youtubeuploader -description "${v.description}" -filename "${v.filepath}" -tags "${v.tags}" -title "${v.title}"`);
+  return cpExec(`youtubeuploader -description "${v.description}" -filename "${v.filepath}" -tags "${v.tags}" -title "${v.title}"`, CP);
 };
 
 // Upload page to Youtube.
