@@ -35,31 +35,31 @@ async function setup(pth) {
 
 // Add a page to crawl list.
 async function add(db, nam) {
-  await db.exec('INSERT OR IGNORE INTO "pages" VALUES (?, 1, 0, 0)', [nam]);
+  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, 1, 0, 0)', nam);
   return nam;
 };
 
 // Remove a page from crawl list.
 async function remove(db, nam) {
-  await db.exec('DELETE FROM "pages" WHERE "title" = ?', [nam]);
+  await db.run('DELETE FROM "pages" WHERE "title" = ?', nam);
   return nam;
 };
 
 // Update a page in crawl list.
 async function update(db, nam, val) {
   var set = '"priority" = $priority, "references" = $references, "uploaded" = $uploaded';
-  var row = await db.get('SELECT * FROM "pages" WHERE "title" = ?', [nam]);
-  await db.exec(`UPDATE "pages" SET ${set} WHERE "name" = $name`, Object.assign(row, val));
+  var row = await db.get('SELECT * FROM "pages" WHERE "title" = ?', nam);
+  await db.run(`UPDATE "pages" SET ${set} WHERE "name" = $name`, Object.assign(row, val));
   return nam;
 };
 
 // Upload a page in crawl list.
 async function upload(db, nam, o) {
   var pag = await wikipediaTts(null, nam, o), p = [];
-  await db.exec('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', [nam]);
-  for(var lnk of await pag.links())
-    p.push(db.exec('UPDATE "pages" SET "references" = "references" + 1 WHERE "title" = ?', [lnk]));
-  await Promise.all(p);
+  await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
+  var lnks = await pag.links();
+  await db.run('INSERT INTO "pages" VALUES '+lnks.map(() => '(?, 0, 0, 0)').join(', '), lnks);
+  await db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE '+lnks.map(() => '"title" = ?').join(' OR '), lnks);
   return nam;
 };
 
