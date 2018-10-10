@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const isVideo = require('is-video');
 const sqlite = require('sqlite');
 const wiki = require('wikijs').default;

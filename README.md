@@ -8,7 +8,37 @@ Crawl Wikipedia pages and upload TTS to Youtube.
 
 
 
-## usage
+## console
+
+```bash
+wikipedia-tts <command> [page] [options]
+# --help: show this help
+# -d | --db: crawl database file (crawl.db)
+# -o | --output: output file (null)
+# --priority: update page priority (0)
+# --references: update page references (0)
+# --uploaded: update page uploaded status (0)
+# Environment variables:
+# WIKIPEDIA_TTS_DB: crawl database file
+
+wikipedia-tts upload "Ladakh"
+# "Ladakh" is uploaded to youtube
+
+wikipedia-tts add "Plant nutrition"
+# "Plant nutrition" is added to crawl list
+
+wikipedia-tts crawl
+# "Plant nutrition" is uploaded to youtube
+# All links in "Plant nutrition" page are added to crawl list
+
+wikipedia-tts crawl
+# Most referenced link in crawl list is uploaded to youtube
+# All links in the page are added to crawl list
+```
+
+
+
+## package
 
 ```javascript
 const wikipediaTts = require('wikipedia-tts');
