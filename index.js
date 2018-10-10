@@ -13,7 +13,7 @@ const DB = E['WTTS_DB']||'crawl.db';
 
 
 // Upload Wikipedia page TTS to Youtube.
-function wikipediaTts(out, nam, o) {
+async function wikipediaTts(out, nam, o) {
   var pag = await wiki().page(nam);
   var txt = await pag.content();
   var img = await pag.mainImage();
@@ -21,9 +21,10 @@ function wikipediaTts(out, nam, o) {
   var tags = nam.toLowerCase().split(/\W+/).join(',');
   var val = {title: nam, description, tags};
   var ext = path.extname(out||'a.json').toLowerCase();
-  if(ext==='.json') return youtube(out, txt, img, val, o).then(() =>  pag);
-  if(isVideo(out)) return video(out, txt, img, o).then(() => pag);
-  return english(out, txt, o).then(() => pag);
+  if(ext==='.json') await youtube(out, txt, img, val, o);
+  else if(isVideo(out)) await video(out, txt, img, o);
+  else await english(out, txt, o);
+  return pag;
 };
 
 // Setup crawl list.
@@ -72,7 +73,6 @@ async function crawl(db, o) {
   return row? await upload(db, row.title, o):null;
 };
 module.exports = wikipediaTts;
-wikipediaTts.uploadPage = uploadPage;
 wikipediaTts.setup = setup;
 wikipediaTts.add = add;
 wikipediaTts.remove = remove;
