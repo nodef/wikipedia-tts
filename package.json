@@ -1,6 +1,6 @@
 {
   "name": "wikipedia-tts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Crawl Wikipedia pages and upload TTS to Youtube.",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "preferGlobal": true,
   "bin": {
-    "wtts": "index.js"
+    "wikipedia-tts": "index.js"
   },
   "repository": {
     "type": "git",

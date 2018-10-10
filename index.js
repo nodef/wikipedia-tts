@@ -11,7 +11,7 @@ const cp = require('child_process');
 // Global variables
 const E = process.env;
 const A = process.argv;
-const DB = E['WTTS_DB']||'crawl.db';
+const DB = E['WIKIPEDIA_TTS_DB']||'crawl.db';
 
 
 // Upload Wikipedia page TTS to Youtube.

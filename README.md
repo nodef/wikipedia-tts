@@ -1,37 +1,52 @@
-## Welcome to GitHub Pages
+Crawl Wikipedia pages and upload TTS to Youtube.
 
-You can use the [editor on GitHub](https://github.com/wikipedia-tts/wikipedia-tts/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
-### Markdown
+## setup
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+1. Follow setup at [@wikipedia-tts/youtube].
 
-```markdown
-Syntax highlighted code block
 
-# Header 1
-## Header 2
-### Header 3
 
-- Bulleted
-- List
+## usage
 
-1. Numbered
-2. List
+```javascript
+const wikipediaTts = require('wikipedia-tts');
+// wikipediaTts.setup([db path]): db conn (promise)
+// wikipediaTts.add(<db>, <page>): add page to crawl list (promise)
+// wikipediaTts.remove(<db>, <page>): remove page from crawl list (promise)
+// wikipediaTts.update(<db>, <page>, <value>): update page priority/references/uploaded in crawl list (promise)
+// wikipediaTts.upload(<db>, <page>): upload particular page in crawl list (promise)
+// wikipediaTts.crawl(<db>): upload page from crawl list, and add links from page (promise)
+// wikipediaTts(<output>, <page>, [options]): upload page to youtube
+// -> <wikijs page> (promise)
 
-**Bold** and _Italic_ and `Code` text
+/* More options: @wikipedia-tts/youtube */
+// [options]: {
+//   db: $WIKIPEDIA_TTS_DB||'crawl.db'
+// }
 
-[Link](url) and ![Image](src)
+
+wikipediaTts(null, 'Ladakh');
+// "Ladakh" is uploaded to youtube
+
+
+var db = await wikipediaTts.setup();
+// crawl.db is created
+
+await wikipediaTts.add(db, 'Plant nutrition');
+// "Plant nutrition" is added to crawl list
+
+await wikipediaTts.crawl(db);
+// "Plant nutrition" is uploaded to youtube
+// All links in "Plant nutrition" page are added to crawl list
+
+await wikipediaTts.crawl(db);
+// Most referenced link in crawl list is uploaded to youtube
+// All links in the page are added to crawl list
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
 
-### Jekyll Themes
+[![wikipedia-tts](https://i.imgur.com/Uu0KJ1U.jpg)](https://www.npmjs.com/package/wikipedia-tts)
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/wikipedia-tts/wikipedia-tts/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+[@wikipedia-tts/youtube]: https://www.npmjs.com/package/@wikipedia-tts/youtube
