@@ -1,7 +1,6 @@
 const sqlite = require('sqlite');
 const wiki = require('wikijs').default;
-const _ = require('lodash');
-const english = require('@wikipedia-tts/english');
+const youtube = require('@wikipedia-tts/youtube');
 const path = require('path');
 const cp = require('child_process');
 
