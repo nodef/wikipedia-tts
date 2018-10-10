@@ -58,7 +58,7 @@ async function upload(db, nam, o) {
   var pag = await wikipediaTts(null, nam, o), p = [];
   await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
   var lnks = await pag.links();
-  await db.run('INSERT INTO "pages" VALUES '+lnks.map(() => '(?, 0, 0, 0)').join(', '), lnks);
+  await db.run('INSERT OR IGNORE INTO "pages" VALUES '+lnks.map(() => '(?, 0, 0, 0)').join(', '), lnks);
   await db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE '+lnks.map(() => '"title" = ?').join(' OR '), lnks);
   return nam;
 };
