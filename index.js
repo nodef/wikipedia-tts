@@ -5,10 +5,12 @@ const youtube = require('@wikipedia-tts/youtube');
 const english = require('@wikipedia-tts/english');
 const video = require('@wikipedia-tts/video');
 const path = require('path');
+const cp = require('child_process');
 
 
 // Global variables
 const E = process.env;
+const A = process.argv;
 const DB = E['WTTS_DB']||'crawl.db';
 
 
@@ -77,3 +79,30 @@ wikipediaTts.remove = remove;
 wikipediaTts.update = update;
 wikipediaTts.upload = upload;
 wikipediaTts.crawl = crawl;
+
+
+// Main.
+async function main() {
+  var cmd = '', nam = '';
+  var dbp = DB, out = '', priority = 0, references = 0, uploaded = 0;
+  var cmds = new Set(['setup', 'add', 'remove', 'update', 'upload', 'crawl']);
+  for(var i=2, I=A.length; i<I; i++) {
+    if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
+    else if(A[i]==='-d' || A[i]==='--db') dbp = A[++i];
+    else if(A[i]==='-o' || A[i]==='--output') out = A[++i];
+    else if(A[i]==='--priority') priority = parseInt(A[++i], 10);
+    else if(A[i]==='--references') references = parseInt(A[++i], 10);
+    else if(A[i]==='--uploaded') uploaded = parseInt(A[++i], 10);
+    else if(!cmd) cmd = A[i];
+    else if(!nam) nam = A[i];
+  }
+  if(!cmds.has(cmd)) return wikipediaTts(out, nam);
+  var db = await setup(dbp);
+  if(cmd==='setup') return;
+  else if(cmd==='add') await add(db, nam);
+  else if(cmd==='remove') await remove(db, nam);
+  else if(cmd==='update') await update(db, nam, {priority, references, uploaded});
+  else if(cmd==='upload') await upload(db, nam);
+  else await crawl(db);
+};
+if(require.main===module) main();
