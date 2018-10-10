@@ -14,17 +14,15 @@ const DB = E['WTTS_DB']||'crawl.db';
 
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
-  var pag = await wiki().page(nam);
-  var txt = await pag.content();
-  var img = await pag.mainImage();
-  var description = await pag.summary();
+  var p = await wiki().page(nam);
+  var [txt, img, description] = await Promise.all([p.content(), p.mainImage(), p.summary()]);
   var tags = nam.toLowerCase().split(/\W+/).join(',');
   var val = {title: nam, description, tags};
-  var ext = path.extname(out||'a.json').toLowerCase();
+  var ext = path.extname(out||'output.json').toLowerCase();
   if(ext==='.json') await youtube(out, txt, img, val, o);
   else if(isVideo(out)) await video(out, txt, img, o);
   else await english(out, txt, o);
-  return pag;
+  return p;
 };
 
 // Setup crawl list.
