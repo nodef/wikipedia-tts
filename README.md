@@ -53,7 +53,7 @@ const wikipediaTts = require('wikipedia-tts');
 
 /* More options: @wikipedia-tts/youtube */
 // [options]: {
-//   db: $WIKIPEDIA_TTS_DB||'crawl.db'
+//   db: $WIKIPEDIATTS_DB||'crawl.db'
 // }
 
 
