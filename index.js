@@ -17,11 +17,21 @@ const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
 
 
+// Get image for page.
+async function pageImage(pag) {
+  var img = await pag.mainImage();
+  if(!img.endsWith('.svg')) return img;
+  var imgs = await pag.images();
+  for(var i of imgs)
+    if(!i.endsWith('.svg')) return i;
+  return img;
+};
+
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
   if(LOG) console.log('@wikipediaTts:', out);
   var p = await wiki().page(nam);
-  var [txt, img, description] = await Promise.all([p.content(), p.mainImage(), p.summary()]);
+  var [txt, img, description] = await Promise.all([p.content(), pageImage(p), p.summary()]);
   var tags = nam.toLowerCase().split(/\W+/).join(',');
   if(LOG) {
     console.log('-name:', nam);
