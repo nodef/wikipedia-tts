@@ -38,7 +38,7 @@ function httpsGet(opt) {
 function wikiPageImage(res) {
   var pages = res.query.pages;
   if(!pages) return null;
-  var page = Object.keys(pages)[0];
+  var page = pages[Object.keys(pages)[0]];
   if(!page.original) return null;
   return page.original.source;
 };
