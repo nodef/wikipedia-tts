@@ -144,8 +144,8 @@ async function upload(db, nam, o) {
   await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
   var lnks = await pageLinks(pag);
   if(LOG) console.log('-links:', lnks.length);
-  await db.run('INSERT OR IGNORE INTO "pages" VALUES '+lnks.map(() => '(?, 0, 0, 0)').join(', '), lnks);
-  await db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE '+lnks.map(() => '"title" = ?').join(' OR '), lnks);
+  await Promise.all(lnks.map(l => db.run('INSERT OR IGNORE INTO "pages" VALUES (?, 0, 0, 0)', l)));
+  await Promise.all(lnks.map(l => db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE "title" = ?', l)));
   return nam;
 };
 
