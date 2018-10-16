@@ -16,7 +16,7 @@ const E = process.env;
 const A = process.argv;
 const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
-const CATEGORY_EXC = /wikipedia|infocard|infobox|article|page|dmy|cs1|[^\w\s]/i
+const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s]/i
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 
 
@@ -59,12 +59,12 @@ async function pageImage(pag) {
 
 // Get categories for page.
 async function pageCategories(pag) {
-  var cats = await pag.categories(), z = [];
+  var cats = await pag.categories(), z = new Set();
   for(var cat of cats) {
     var c = cat.replace('Category:', '');
-    if(!CATEGORY_EXC.test(c)) z.push(c);
+    if(!CATEGORY_EXC.test(c)) z.add(c.toLowerCase());
   }
-  return z;
+  return Array.from(z);
 };
 
 // Get forward and backlinks for page.
