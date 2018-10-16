@@ -77,6 +77,15 @@ async function pageLinks(pag) {
   return z;
 };
 
+// Run sql statement with map and join.
+function sqlRunMapJoin(db, pre, dat, map, sep) {
+  for(var i=0, I=dat.length, z= []; i<I; i+=256) {
+    var prt = dat.slice(i, i+256);
+    z.push(db.run(pre+prt.map(map).join(sep), prt));
+  }
+  return Promise.all(z);
+};
+
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
   if(LOG) console.log('@wikipediaTts:', out);
@@ -144,8 +153,8 @@ async function upload(db, nam, o) {
   await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
   var lnks = await pageLinks(pag);
   if(LOG) console.log('-links:', lnks.length);
-  await Promise.all(lnks.map(l => db.run('INSERT OR IGNORE INTO "pages" VALUES (?, 0, 0, 0)', l)));
-  await Promise.all(lnks.map(l => db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE "title" = ?', l)));
+  await sqlRunMapJoin(db, 'INSERT OR IGNORE INTO "pages" VALUES ', lnks, () => '(?, 0, 0, 0)', ', ');
+  await sqlRunMapJoin(db, 'UPDATE "pages" SET "references" = "references" + 1 WHERE ', lnks, () => '"title" = ?', ' OR ');
   return nam;
 };
 
