@@ -59,12 +59,12 @@ async function pageImage(pag) {
 
 // Get categories for page.
 async function pageCategories(pag) {
-  var cats = await pag.categories(), z = new Set();
+  var cats = await pag.categories(), z = [];
   for(var cat of cats) {
     var c = cat.replace('Category:', '');
-    if(!CATEGORY_EXC.test(c)) z.add(c.toLowerCase());
+    if(!CATEGORY_EXC.test(c)) z.push(c);
   }
-  return Array.from(z);
+  return z;
 };
 
 // Get forward and backlinks for page.
@@ -92,7 +92,7 @@ async function wikipediaTts(out, nam, o) {
   var p = await wiki().page(nam);
   var inf = [p.content(), pageImage(p), pageCategories(p), p.summary()];
   var [txt, img, tags, description] = await Promise.all(inf);
-  tags.unshift(nam);
+  if(!tags.includes(nam)) tags.unshift(nam);
   if(LOG) {
     console.log('-name:', nam);
     console.log('-tags:', tags);
