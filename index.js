@@ -6,6 +6,7 @@ const wiki = require('wikijs').default;
 const youtube = require('@wikipedia-tts/youtube');
 const english = require('@wikipedia-tts/english');
 const video = require('@wikipedia-tts/video');
+const https = require('https');
 const path = require('path');
 const cp = require('child_process');
 
@@ -15,10 +16,38 @@ const E = process.env;
 const A = process.argv;
 const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
+const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 
+
+// Make HTTPS GET request.
+function httpsGet(opt) {
+  return new Promise((fres, frej) => {
+    var req = https.get(opt, (res) => {
+      var err = null, cod = res.statusCode, dat = '';
+      if(cod!==200) err = new Error(`HTTPS GET failed (${cod}).\n${opt}`);
+      if(err) { res.resume(); return frej(err); }
+      res.setEncoding('utf8');
+      res.on('data', (cnk) => dat+=cnk);
+      res.on('end', () => fres(dat));
+    });
+    req.on('error', frej);
+  });
+};
+
+// Get page image from wikipedia pageimages API response.
+function wikiPageImage(res) {
+  var pages = res.query.pages;
+  if(!pages) return null;
+  var page = Object.keys(pages)[0];
+  if(!page.original) return null;
+  return page.original.source;
+};
 
 // Get image for page.
 async function pageImage(pag) {
+  var wurl = PAGEIMAGES_URL+encodeURIComponent(pag.raw.title);
+  var img = wikiPageImage(JSON.parse(await httpsGet(wurl)));
+  if(img) return img;
   var img = await pag.mainImage();
   if(!img.endsWith('.svg')) return img;
   var imgs = await pag.images();
