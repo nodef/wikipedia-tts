@@ -16,6 +16,7 @@ const E = process.env;
 const A = process.argv;
 const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
+const CATEGORY_EXC = /wikipedia|article|page|dmy|\:/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 
 
@@ -56,12 +57,23 @@ async function pageImage(pag) {
   return img;
 };
 
+// Get categories for page.
+async function pageCategories(pag) {
+  var cats = await pag.categories(), z = [];
+  for(var cat of cats) {
+    var c = cat.replace('Category:', '');
+    if(!CATEGORY_EXC.test(c)) z.push(c);
+  }
+  return z;
+};
+
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
   if(LOG) console.log('@wikipediaTts:', out);
   var p = await wiki().page(nam);
-  var [txt, img, description] = await Promise.all([p.content(), pageImage(p), p.summary()]);
-  var tags = nam.toLowerCase().split(/\W+/).join(',');
+  var inf = [p.content(), pageImage(p), pageCategories(p), p.summary()];
+  var [txt, img, tags, description] = await Promise.all(inf);
+  tags.unshift(nam);
   if(LOG) {
     console.log('-name:', nam);
     console.log('-tags:', tags);
