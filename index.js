@@ -16,7 +16,7 @@ const E = process.env;
 const A = process.argv;
 const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
-const CATEGORY_EXC = /wikipedia|article|page|dmy|\:/i;
+const CATEGORY_EXC = /wikipedia|article|page|dmy|cs1|\W/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 
 
@@ -64,6 +64,16 @@ async function pageCategories(pag) {
     var c = cat.replace('Category:', '');
     if(!CATEGORY_EXC.test(c)) z.push(c);
   }
+  return z;
+};
+
+// Get forward and backlinks for page.
+async function pageLinks(pag) {
+  var [fwd, bck] = await Promise.all([pag.links(), pag.backlinks()]), z = [];
+  for(var lnk of fwd)
+    if(!lnk.includes(':')) z.push(lnk);
+  for(var lnk of bck)
+    if(!lnk.includes(':')) z.push(lnk);
   return z;
 };
 
@@ -130,10 +140,9 @@ async function update(db, nam, val) {
 // Upload a page in crawl list.
 async function upload(db, nam, o) {
   if(LOG) console.log('.upload', nam);
-  var pag = await wikipediaTts(null, nam, o), p = [];
+  var pag = await wikipediaTts(null, nam, o);
   await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
-  var [fwd, bck] = await Promise.all([pag.links(), pag.backlinks()]);
-  var lnks = fwd.concat(bck);
+  var lnks = await pageLinks(pag);
   if(LOG) console.log('-links:', lnks.length);
   await db.run('INSERT OR IGNORE INTO "pages" VALUES '+lnks.map(() => '(?, 0, 0, 0)').join(', '), lnks);
   await db.run('UPDATE "pages" SET "references" = "references" + 1 WHERE '+lnks.map(() => '"title" = ?').join(' OR '), lnks);
