@@ -19,7 +19,8 @@ wikipedia-tts <command> [page] [options]
 # --references: update page references (0)
 # --uploaded: update page uploaded status (0)
 # Environment variables:
-# WIKIPEDIA_TTS_DB: crawl database file
+# WIKIPEDIATTS_DB: crawl database file (crawl.db)
+# WIKIPEDIATTS_LOG: enable logging (0)
 
 wikipedia-tts upload "Ladakh"
 # "Ladakh" is uploaded to youtube
