@@ -18,6 +18,7 @@ const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
 const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
+const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
 
 
 // Make HTTPS GET request.
@@ -54,7 +55,7 @@ async function pageImage(pag) {
   var imgs = await pag.images();
   for(var i of imgs||[])
     if(!i.endsWith('.svg')) return i;
-  return img;
+  return img||BLANKIMAGE_URL;
 };
 
 // Get categories for page.
