@@ -89,10 +89,13 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
+  var o = o||{}, i = o.input||{};
   if(LOG) console.log('@wikipediaTts:', out);
   var p = await wiki().page(nam);
-  var inf = [p.content(), pageImage(p), pageCategories(p), p.summary()];
-  var [txt, img, tags, description] = await Promise.all(inf);
+  var [txt, img, tags, description] = await Promise.all([
+    i.text||p.content(), i.image||pageImage(p),
+    i.tags||pageCategories(p), i.description||p.summary()
+  ]);
   if(!tags.includes(nam)) tags.unshift(nam);
   if(LOG) {
     console.log('-name:', nam);

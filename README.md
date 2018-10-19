@@ -54,7 +54,13 @@ const wikipediaTts = require('wikipedia-tts');
 
 /* More options: @wikipedia-tts/youtube */
 // [options]: {
-//   db: $WIKIPEDIATTS_DB||'crawl.db'
+//   db: $WIKIPEDIATTS_DB||'crawl.db',
+//   input: {
+//     text: null,
+//     image: null,
+//     tags: null,
+//     description: null
+//   }
 // }
 
 
