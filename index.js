@@ -16,7 +16,7 @@ const E = process.env;
 const A = process.argv;
 const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
 const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
-const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s]/i;
+const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 
 
