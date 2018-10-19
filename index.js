@@ -50,9 +50,9 @@ async function pageImage(pag) {
   var img = wikiPageImage(JSON.parse(await httpsGet(wurl)));
   if(img) return img;
   var img = await pag.mainImage();
-  if(!img.endsWith('.svg')) return img;
+  if(img && !img.endsWith('.svg')) return img;
   var imgs = await pag.images();
-  for(var i of imgs)
+  for(var i of imgs||[])
     if(!i.endsWith('.svg')) return i;
   return img;
 };
