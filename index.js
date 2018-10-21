@@ -152,10 +152,12 @@ async function update(db, nam, val) {
 
 // Upload a page in crawl list.
 async function upload(db, nam, o) {
+  var pag = null;
   if(LOG) console.log('.upload', nam);
-  var pag = await wikipediaTts(null, nam, o);
+  try { pag = await wikipediaTts(null, nam, o); }
+  catch(e) { if(e.message!=='No article found') throw e; }
   await db.run('UPDATE "pages" SET "uploaded" = 1 WHERE "title" = ?', nam);
-  var lnks = await pageLinks(pag);
+  var lnks = pag? await pageLinks(pag):[];
   if(LOG) console.log('-links:', lnks.length);
   await sqlRunMapJoin(db, 'INSERT OR IGNORE INTO "pages" VALUES ', lnks, () => '(?, 0, 0, 0)', ', ');
   await sqlRunMapJoin(db, 'UPDATE "pages" SET "references" = "references" + 1 WHERE ', lnks, () => '"title" = ?', ' OR ');
