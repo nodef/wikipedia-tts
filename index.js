@@ -129,8 +129,12 @@ async function add(db, nam) {
 
 // Add a page to crawl list.
 async function add(db, nam) {
-  if(LOG) console.log('.add', nam);
-  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, 1, 0, 0)', nam);
+  var  o = o||{};
+  var pri = o.priority||0;
+  var ref = o.references||0;
+  var upl = o.uploaded||0;
+  if(LOG) console.log('.add', nam, pri, ref, upl);
+  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, pri, ref, upl);
   return nam;
 };
 
@@ -200,7 +204,7 @@ async function main() {
   if(!cmds.has(cmd)) return wikipediaTts(out, nam);
   var db = await setup(dbp);
   if(cmd==='setup') return;
-  else if(cmd==='add') await add(db, nam);
+  else if(cmd==='add') await add(db, nam, {priority, references, uploaded});
   else if(cmd==='remove') await remove(db, nam);
   else if(cmd==='update') await update(db, nam, {priority, references, uploaded});
   else if(cmd==='upload') await upload(db, nam);
