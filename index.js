@@ -191,9 +191,9 @@ async function main() {
     if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
     else if(A[i]==='-d' || A[i]==='--db') dbp = A[++i];
     else if(A[i]==='-o' || A[i]==='--output') out = A[++i];
-    else if(A[i]==='--priority') priority = parseInt(A[++i], 10);
-    else if(A[i]==='--references') references = parseInt(A[++i], 10);
-    else if(A[i]==='--uploaded') uploaded = parseInt(A[++i], 10);
+    else if(A[i]==='-p' || A[i]==='--priority') priority = parseInt(A[++i], 10);
+    else if(A[i]==='-r' || A[i]==='--references') references = parseInt(A[++i], 10);
+    else if(A[i]==='-u' || A[i]==='--uploaded') uploaded = parseInt(A[++i], 10);
     else if(!cmd) cmd = A[i];
     else if(!nam) nam = A[i];
   }
