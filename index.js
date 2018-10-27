@@ -121,10 +121,11 @@ async function setup(pth) {
 };
 
 // Get a page from crawl list.
-async function add(db, nam) {
-  if(LOG) console.log('.add', nam);
-  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, 1, 0, 0)', nam);
-  return nam;
+async function get(db, nam) {
+  if(LOG) console.log('.get', nam);
+  var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
+  console.log('-row', row);
+  return row;
 };
 
 // Add a page to crawl list.
@@ -179,6 +180,7 @@ async function crawl(db, o) {
 };
 module.exports = wikipediaTts;
 wikipediaTts.setup = setup;
+wikipediaTts.get = get;
 wikipediaTts.add = add;
 wikipediaTts.remove = remove;
 wikipediaTts.update = update;
@@ -190,7 +192,7 @@ wikipediaTts.crawl = crawl;
 async function main() {
   var cmd = '', nam = '';
   var dbp = DB, out = '', priority = 0, references = 0, uploaded = 0;
-  var cmds = new Set(['setup', 'add', 'remove', 'update', 'upload', 'crawl']);
+  var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
   for(var i=2, I=A.length; i<I; i++) {
     if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
     else if(A[i]==='-d' || A[i]==='--db') dbp = A[++i];
@@ -204,6 +206,7 @@ async function main() {
   if(!cmds.has(cmd)) return wikipediaTts(out, nam);
   var db = await setup(dbp);
   if(cmd==='setup') return;
+  else if(cmd==='get') await get(db, nam);
   else if(cmd==='add') await add(db, nam, {priority, references, uploaded});
   else if(cmd==='remove') await remove(db, nam);
   else if(cmd==='update') await update(db, nam, {priority, references, uploaded});
