@@ -129,7 +129,7 @@ async function get(db, nam) {
 };
 
 // Add a page to crawl list.
-async function add(db, nam) {
+async function add(db, nam, o) {
   var  o = o||{};
   var pri = o.priority||0;
   var ref = o.references||0;
