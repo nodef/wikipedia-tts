@@ -68,13 +68,9 @@ async function pageCategories(pag) {
   return z;
 };
 
-// Get forward and backlinks for page.
+// Get forward links for page.
 async function pageLinks(pag) {
-  var [fwd, bck] = await Promise.all([pag.links(), pag.backlinks()]), z = [];
-  for(var lnk of fwd)
-    if(!lnk.includes(':')) z.push(lnk);
-  for(var lnk of bck)
-    if(!lnk.includes(':')) z.push(lnk);
+  var z = await pag.links();
   return z;
 };
 
@@ -160,7 +156,7 @@ async function upload(db, nam, o) {
   var pag = null, upl = 1;
   if(LOG) console.log('.upload', nam);
   try { pag = await wikipediaTts(null, nam, o); }
-  catch(e) { if(e.message!=='No article found') upl = -1; }
+  catch(e) { if(e.message!=='No article found') upl = -1; console.error(e); }
   await db.run('UPDATE "pages" SET "uploaded" = ? WHERE "title" = ?', upl, nam);
   if(upl!==1) return null;
   var lnks = pag? await pageLinks(pag):[];
