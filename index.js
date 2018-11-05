@@ -92,6 +92,7 @@ async function wikipediaTts(out, nam, o) {
     i.text||p.content(), i.image||pageImage(p),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
+  img = img.endsWith('.svg')? img+'/1024px-'+path.basename(img)+'.jpg':img;
   if(!tags.includes(nam)) tags.unshift(nam);
   if(LOG) {
     console.log('-name:', nam);
