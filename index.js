@@ -159,6 +159,8 @@ async function update(db, nam, val) {
 async function upload(db, nam, o) {
   var pag = null, upl = 1;
   if(LOG) console.log('.upload', nam);
+  var ids = await youtube.get(nam);
+  if(ids.length) { if(LOG) console.log('video ids:', ids); return nam; }
   try { pag = await wikipediaTts(null, nam, o); }
   catch(e) { if(e.message!=='No article found') upl = -1; console.error(e); }
   await db.run('UPDATE "pages" SET "uploaded" = ? WHERE "title" = ?', upl, nam);
@@ -172,11 +174,15 @@ async function upload(db, nam, o) {
 
 // Crawl a page.
 async function crawl(db, o) {
+  var o = o||{};
   if(LOG) console.log('.crawl');
-  var whr = '"uploaded" = 0';
-  var ord = '"priority" DESC, "references" DESC';
-  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
-  return row? await upload(db, row.title, o):null;
+  for(var i=0, I=o.loop||1; i<I; i++) {
+    var whr = '"uploaded" = 0';
+    var ord = '"priority" DESC, "references" DESC';
+    var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
+    if(row) await upload(db, row.title, o);
+    else break;
+  }
 };
 module.exports = wikipediaTts;
 wikipediaTts.setup = setup;
@@ -191,7 +197,7 @@ wikipediaTts.crawl = crawl;
 // Main.
 async function main() {
   var cmd = '', nam = '';
-  var dbp = DB, out = '', priority = 0, references = 0, uploaded = 0;
+  var dbp = DB, out = '', priority = 0, references = 0, uploaded = 0, loop = 1;
   var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
   for(var i=2, I=A.length; i<I; i++) {
     if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
@@ -200,6 +206,7 @@ async function main() {
     else if(A[i]==='-p' || A[i]==='--priority') priority = parseInt(A[++i], 10);
     else if(A[i]==='-r' || A[i]==='--references') references = parseInt(A[++i], 10);
     else if(A[i]==='-u' || A[i]==='--uploaded') uploaded = parseInt(A[++i], 10);
+    else if(A[i]==='-l' || A[i]==='--loop') loop = parseInt(A[++i], 10);
     else if(!cmd) cmd = A[i];
     else if(!nam) nam = A[i];
   }
@@ -211,6 +218,6 @@ async function main() {
   else if(cmd==='remove') await remove(db, nam);
   else if(cmd==='update') await update(db, nam, {priority, references, uploaded});
   else if(cmd==='upload') await upload(db, nam);
-  else await crawl(db);
+  else await crawl(db, {loop});
 };
 if(require.main===module) main();

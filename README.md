@@ -15,9 +15,10 @@ wikipedia-tts <command> [page] [options]
 # --help: show this help
 # -d | --db: crawl database file (crawl.db)
 # -o | --output: output file (null)
-# --priority: update page priority (0)
-# --references: update page references (0)
-# --uploaded: update page uploaded status (0)
+# -p | --priority: update page priority (0)
+# -r | --references: update page references (0)
+# -u | --uploaded: update page uploaded status (0)
+# -l | --loop: loop count for crawl (1)
 # Environment variables:
 # WIKIPEDIATTS_DB: crawl database file (crawl.db)
 # WIKIPEDIATTS_LOG: enable logging (0)
@@ -32,9 +33,14 @@ wikipedia-tts crawl
 # "Plant nutrition" is uploaded to youtube
 # All links in "Plant nutrition" page are added to crawl list
 
-wikipedia-tts crawl
+wikipedia-tts crawl --loop 100
 # Most referenced link in crawl list is uploaded to youtube
 # All links in the page are added to crawl list
+# ...
+# Repeat for 99 more times
+
+wikipedia-tts crawl --loop -1
+# Crawl indefinitely
 ```
 
 
