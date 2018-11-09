@@ -79,7 +79,6 @@ async function pageLinks(pag) {
 function sqlRunMapJoin(db, pre, dat, map, sep) {
   for(var i=0, I=dat.length, z= []; i<I; i+=256) {
     var prt = dat.slice(i, i+256);
-    console.log(pre+prt.map(map).join(sep), prt);
     z.push(db.run(pre+prt.map(map).join(sep), prt));
   }
   return Promise.all(z);
@@ -193,8 +192,10 @@ async function remove(db, nam) {
 // Update a page in crawl list.
 async function update(db, nam, o) {
   if(LOG) console.log('.update', nam, o);
+  var val = {$title: nam};
+  for(var k in o) val['$'+k] = o[k];
   var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
-  db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign({title: nam}, o));
+  db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, val);
   return nam;
 };
 
@@ -220,13 +221,13 @@ async function crawl(db, o) {
   var o = o||{}, status = 1;
   if(LOG) console.log('.crawl', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
-    try {
+    // try {
       var row = await getCrawl(db);
       if(!row) break;
       await update(db, row.title, {status});
       await crawlOne(db, row.title);
-    }
-    catch(e) { console.error(e); }
+    // }
+    // catch(e) { console.error(e); }
   }
   return i;
 };
