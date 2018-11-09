@@ -34,13 +34,12 @@ wikipedia-tts update "Plant nutrition" --priority 1
 # this means it will be crawled/uploaded first
 # even if other pages have higher number of references
 
-
 wikipedia-tts crawl
 # "Plant nutrition" is page links are crawled
 # this is because it is on top priority, references
 
 wikipedia-tts crawl --loop 10
-# Crawling done recursively 100 times
+# Crawling done recursively 10 times
 
 wikipedia-tts crawl --loop -1
 # Crawling done recursively indefinitely
@@ -49,16 +48,7 @@ wikipedia-tts upload
 # Highest ranking page is crawled and uploaded to YouTube
 
 wikipedia-tts upload --loop -1
-# Highest ranking pages are crawled and uploaded to YouTube indefinitely
-
-wikipedia-tts crawl --loop 100
-# Most referenced link in crawl list is uploaded to youtube
-# All links in the page are added to crawl list
-# ...
-# Repeat for 99 more times
-
-wikipedia-tts crawl --loop -1
-# Crawl indefinitely
+# Pages are crawled and uploaded to YouTube indefinitely
 ```
 
 
@@ -68,12 +58,13 @@ wikipedia-tts crawl --loop -1
 ```javascript
 const wikipediaTts = require('wikipedia-tts');
 // wikipediaTts.setup([db path]): db conn (promise)
-// wikipediaTts.add(<db>, <page>): add page to crawl list (promise)
-// wikipediaTts.remove(<db>, <page>): remove page from crawl list (promise)
-// wikipediaTts.update(<db>, <page>, <value>): update page priority/references/uploaded in crawl list (promise)
-// wikipediaTts.upload(<db>, <page>): upload particular page in crawl list (promise)
-// wikipediaTts.crawl(<db>): upload page from crawl list, and add links from page (promise)
-// wikipediaTts(<output>, <page>, [options]): upload page to youtube
+// wikipediaTts.get<db>, <page>): {title, priority, references, status} (promise)
+// wikipediaTts.add(<db>, <page>): page (promise)
+// wikipediaTts.remove(<db>, <page>): page (promise)
+// wikipediaTts.update(<db>, <page>, [value]): page (promise)
+// wikipediaTts.crawl(<db>, [options]): times crawled (promise)
+// wikipediaTts.upload(<db>, [options]): times uploaded (promise)
+// wikipediaTts(<output>, <page>, [options]): Upload page to YouTube
 // -> <wikijs page> (promise)
 
 /* More options: @wikipedia-tts/youtube */
@@ -93,18 +84,31 @@ wikipediaTts(null, 'Ladakh');
 
 
 var db = await wikipediaTts.setup();
-// crawl.db is created
+// crawl list is created (crawl.db)
 
 await wikipediaTts.add(db, 'Plant nutrition');
 // "Plant nutrition" is added to crawl list
 
-await wikipediaTts.crawl(db);
-// "Plant nutrition" is uploaded to youtube
-// All links in "Plant nutrition" page are added to crawl list
+await wikipediaTts.update(db, 'Plant nutrition',  {priority: 1});
+// "Plant nutrition" priority is set to 1
+// this means it will be crawled/uploaded first
+// even if other pages have higher number of references
 
 await wikipediaTts.crawl(db);
-// Most referenced link in crawl list is uploaded to youtube
-// All links in the page are added to crawl list
+// "Plant nutrition" is page links are crawled
+// this is because it is on top priority, references
+
+await wikipediaTts.crawl(db, {loop: 10});
+// Crawling done recursively 10 times
+
+await wikipediaTts.crawl(db, {loop: -1});
+// Crawling done recursively indefinitely
+
+await wikipediaTts.upload(db);
+// Highest ranking page is crawled and uploaded to YouTube
+
+await wikipediaTts.upload(db, {loop: -1});
+// Pages are crawled and uploaded to YouTube indefinitely
 ```
 
 

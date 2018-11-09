@@ -227,6 +227,7 @@ async function crawl(db, o) {
     }
     catch(e) { console.error(e); }
   }
+  return i;
 };
 module.exports = wikipediaTts;
 wikipediaTts.setup = setup;
