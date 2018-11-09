@@ -19,6 +19,7 @@ const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
 const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
+const ROW_DEFAULT = {priority: 0, references: 0, status: 0};
 
 
 // Make HTTPS GET request.
@@ -111,11 +112,38 @@ async function wikipediaTts(out, nam, o) {
   return p;
 };
 
+// Upload page, if unique.
+async function uploadUnique(nam, o) {
+  console.log('.uploadUnique', nam);
+  var ids = await youtube.get(nam);
+  if(ids.length) {
+    if(LOG) console.log('-already exists:', ids);
+    return 2;
+  }
+  try { await wikipediaTts(null, nam, o); }
+  catch(e) {
+    if(LOG) console.error(e);
+    return e.message==='No article found'? -2:-4;
+  }
+  return 0;
+};
+
+// Crawl one page.
+async function crawlOne(db, nam) {
+  if(LOG) console.log('.crawlOne', nam);
+  var p = await wiki().page(nam);
+  var lnks = p? await pageLinks(p):[];
+  if(LOG) console.log('-links:', lnks.length);
+  await sqlRunMapJoin(db, 'INSERT OR IGNORE INTO "pages" VALUES ', lnks, () => '(?, 0, 0, 0)', ', ');
+  await sqlRunMapJoin(db, 'UPDATE "pages" SET "references" = "references" + 1 WHERE ', lnks, () => '"title" = ?', ' OR ');
+  return p;
+};
+
 // Setup crawl list.
 async function setup(pth) {
   var db = await sqlite.open(pth||DB);
   if(LOG) console.log('.setup', pth);
-  var col = '"title" TEXT PRIMARY KEY, "priority" INTEGER, "references" INTEGER, "uploaded" INTEGER';
+  var col = '"title" TEXT PRIMARY KEY, "priority" INTEGER, "references" INTEGER, "status" INTEGER';
   await db.exec(`CREATE TABLE IF NOT EXISTS "pages" (${col})`);
   return db;
 };
@@ -123,19 +151,19 @@ async function setup(pth) {
 // Get a page from crawl list.
 async function get(db, nam) {
   if(LOG) console.log('.get', nam);
-  var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
+  var whr = '"status" = 0', ord = '"priority" DESC, "references" DESC';
+  var sele = `SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`;
+  var seln = 'SELECT * "pages" WHERE "title" = ? LIMIT 1';
+  var row = await db.get(nam? seln:sele, nam);
   console.log('-row', row);
   return row;
 };
 
 // Add a page to crawl list.
 async function add(db, nam, o) {
-  var  o = o||{};
-  var pri = o.priority||0;
-  var ref = o.references||0;
-  var upl = o.uploaded||0;
-  if(LOG) console.log('.add', nam, pri, ref, upl);
-  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, pri, ref, upl);
+  if(LOG) console.log('.add', o);
+  var o = Object.assign({}, ROW_DEFAULT, o);
+  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, o.priority, o.references, o.status);
   return nam;
 };
 
@@ -147,41 +175,36 @@ async function remove(db, nam) {
 };
 
 // Update a page in crawl list.
-async function update(db, nam, val) {
-  if(LOG) console.log('.update', nam, JSON.stringify(val));
-  var set = '"priority" = $priority, "references" = $references, "uploaded" = $uploaded';
-  var row = await db.get('SELECT * FROM "pages" WHERE "title" = ?', nam);
-  await db.run(`UPDATE "pages" SET ${set} WHERE "name" = $name`, Object.assign(row, val));
+async function update(db, nam, o) {
+  if(LOG) console.log('.update', nam, o);
+  var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
+  await db.run(`UPDATE "pages" SET ${set} WHERE "name" = $name`, Object.assign(set, {title: nam}));
   return nam;
 };
 
-// Upload a page in crawl list.
-async function upload(db, nam, o) {
-  var pag = null, upl = 1;
-  if(LOG) console.log('.upload', nam);
-  var ids = await youtube.get(nam);
-  if(ids.length) { if(LOG) console.log('video ids:', ids); return nam; }
-  try { pag = await wikipediaTts(null, nam, o); }
-  catch(e) { if(e.message!=='No article found') upl = -1; console.error(e); }
-  await db.run('UPDATE "pages" SET "uploaded" = ? WHERE "title" = ?', upl, nam);
-  if(upl!==1) return null;
-  var lnks = pag? await pageLinks(pag):[];
-  if(LOG) console.log('-links:', lnks.length);
-  await sqlRunMapJoin(db, 'INSERT OR IGNORE INTO "pages" VALUES ', lnks, () => '(?, 0, 0, 0)', ', ');
-  await sqlRunMapJoin(db, 'UPDATE "pages" SET "references" = "references" + 1 WHERE ', lnks, () => '"title" = ?', ' OR ');
-  return nam;
+// Upload a page.
+async function upload(db, o) {
+  var o = o||{};
+  if(LOG) console.log('.upload', o);
+  for(var i=0, I=o.loop||1; i<I; i++) {
+    var row = await get(db);
+    if(!row) break;
+    var status = await uploadUnique(row.title, o);
+    await update(db, row.title, {status});
+    await crawlOne(db, row.title);
+  }
+  return i;
 };
 
 // Crawl a page.
 async function crawl(db, o) {
-  var o = o||{};
-  if(LOG) console.log('.crawl');
+  var o = o||{}, status = 1;
+  if(LOG) console.log('.crawl', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
-    var whr = '"uploaded" = 0';
-    var ord = '"priority" DESC, "references" DESC';
-    var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
-    if(row) await upload(db, row.title, o);
-    else break;
+    var row = await get(db);
+    if(!row) break;
+    await update(db, row.title, {status});
+    await crawlOne(db, row.title);
   }
 };
 module.exports = wikipediaTts;
@@ -197,7 +220,7 @@ wikipediaTts.crawl = crawl;
 // Main.
 async function main() {
   var cmd = '', nam = '';
-  var dbp = DB, out = '', priority = 0, references = 0, uploaded = 0, loop = 1;
+  var dbp = DB, out = '', priority = 0, references = 0, status = 0, loop = 1;
   var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
   for(var i=2, I=A.length; i<I; i++) {
     if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
@@ -205,7 +228,7 @@ async function main() {
     else if(A[i]==='-o' || A[i]==='--output') out = A[++i];
     else if(A[i]==='-p' || A[i]==='--priority') priority = parseInt(A[++i], 10);
     else if(A[i]==='-r' || A[i]==='--references') references = parseInt(A[++i], 10);
-    else if(A[i]==='-u' || A[i]==='--uploaded') uploaded = parseInt(A[++i], 10);
+    else if(A[i]==='-s' || A[i]==='--status') status = parseInt(A[++i], 10);
     else if(A[i]==='-l' || A[i]==='--loop') loop = parseInt(A[++i], 10);
     else if(!cmd) cmd = A[i];
     else if(!nam) nam = A[i];
@@ -214,10 +237,10 @@ async function main() {
   var db = await setup(dbp);
   if(cmd==='setup') return;
   else if(cmd==='get') await get(db, nam);
-  else if(cmd==='add') await add(db, nam, {priority, references, uploaded});
+  else if(cmd==='add') await add(db, nam, {priority, references, status});
   else if(cmd==='remove') await remove(db, nam);
-  else if(cmd==='update') await update(db, nam, {priority, references, uploaded});
-  else if(cmd==='upload') await upload(db, nam);
+  else if(cmd==='update') await update(db, nam, {priority, references, status});
+  else if(cmd==='upload') await upload(db, {loop});
   else await crawl(db, {loop});
 };
 if(require.main===module) main();
