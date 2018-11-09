@@ -125,7 +125,7 @@ async function uploadUnique(nam, o) {
     if(LOG) console.error(e);
     return e.message==='No article found'? -2:-4;
   }
-  return 0;
+  return 4;
 };
 
 // Crawl one page.
@@ -178,7 +178,7 @@ async function remove(db, nam) {
 async function update(db, nam, o) {
   if(LOG) console.log('.update', nam, o);
   var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
-  console.log(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign({title: nam}, o));
+  db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign({title: nam}, o));
   return nam;
 };
 
