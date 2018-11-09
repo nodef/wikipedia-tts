@@ -112,6 +112,24 @@ async function wikipediaTts(out, nam, o) {
   return p;
 };
 
+// Get a page for crawl.
+async function getCrawl(db) {
+  if(LOG) console.log('.getCrawl');
+  var whr = '"status" = 0', ord = '"priority" DESC, "references" DESC';
+  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`, nam);
+  console.log('-row', row);
+  return row;
+};
+
+// Get a page for upload.
+async function getUpload(db) {
+  if(LOG) console.log('.getUpload');
+  var whr = '"status" = 0 OR "status" = 1', ord = '"priority" DESC, "references" DESC';
+  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`, nam);
+  console.log('-row', row);
+  return row;
+};
+
 // Upload page, if unique.
 async function uploadUnique(nam, o) {
   console.log('.uploadUnique', nam);
@@ -151,10 +169,7 @@ async function setup(pth) {
 // Get a page from crawl list.
 async function get(db, nam) {
   if(LOG) console.log('.get', nam);
-  var whr = '"status" = 0', ord = '"priority" DESC, "references" DESC';
-  var sele = `SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`;
-  var seln = 'SELECT * "pages" WHERE "title" = ? LIMIT 1';
-  var row = await db.get(nam? seln:sele, nam);
+  var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
   console.log('-row', row);
   return row;
 };
@@ -188,11 +203,11 @@ async function upload(db, o) {
   if(LOG) console.log('.upload', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
     try {
-      var row = await get(db);
+      var row = await getUpload(db);
       if(!row) break;
       var status = await uploadUnique(row.title, o);
       await update(db, row.title, {status});
-      await crawlOne(db, row.title);
+      if(row.status===0) await crawlOne(db, row.title);
     }
     catch(e) { console.error(e); }
   }
@@ -205,7 +220,7 @@ async function crawl(db, o) {
   if(LOG) console.log('.crawl', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
     try {
-      var row = await get(db);
+      var row = await getCrawl(db);
       if(!row) break;
       await update(db, row.title, {status});
       await crawlOne(db, row.title);

@@ -1,4 +1,4 @@
-Crawl Wikipedia pages and upload TTS to Youtube.
+Crawl Wikipedia pages and upload TTS to YouTube.
 
 
 
@@ -17,21 +17,39 @@ wikipedia-tts <command> [page] [options]
 # -o | --output: output file (null)
 # -p | --priority: update page priority (0)
 # -r | --references: update page references (0)
-# -u | --uploaded: update page uploaded status (0)
-# -l | --loop: loop count for crawl (1)
+# -s | --status: update page status (0)
+# -l | --loop: loop count for crawl/upload (1)
 # Environment variables:
 # WIKIPEDIATTS_DB: crawl database file (crawl.db)
 # WIKIPEDIATTS_LOG: enable logging (0)
 
-wikipedia-tts upload "Ladakh"
-# "Ladakh" is uploaded to youtube
+wikipedia-tts "Ladakh"
+# "Ladakh" is uploaded to YouTube
 
 wikipedia-tts add "Plant nutrition"
 # "Plant nutrition" is added to crawl list
 
+wikipedia-tts update "Plant nutrition" --priority 1
+# "Plant nutrition" priority is set to 1
+# this means it will be crawled/uploaded first
+# even if other pages have higher number of references
+
+
 wikipedia-tts crawl
-# "Plant nutrition" is uploaded to youtube
-# All links in "Plant nutrition" page are added to crawl list
+# "Plant nutrition" is page links are crawled
+# this is because it is on top priority, references
+
+wikipedia-tts crawl --loop 10
+# Crawling done recursively 100 times
+
+wikipedia-tts crawl --loop -1
+# Crawling done recursively indefinitely
+
+wikipedia-tts upload
+# Highest ranking page is crawled and uploaded to YouTube
+
+wikipedia-tts upload --loop -1
+# Highest ranking pages are crawled and uploaded to YouTube indefinitely
 
 wikipedia-tts crawl --loop 100
 # Most referenced link in crawl list is uploaded to youtube
