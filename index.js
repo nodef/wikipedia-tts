@@ -116,7 +116,7 @@ async function wikipediaTts(out, nam, o) {
 async function getCrawl(db) {
   if(LOG) console.log('.getCrawl');
   var whr = '"status" = 0', ord = '"priority" DESC, "references" DESC';
-  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`, nam);
+  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
   console.log('-row', row);
   return row;
 };
@@ -125,7 +125,7 @@ async function getCrawl(db) {
 async function getUpload(db) {
   if(LOG) console.log('.getUpload');
   var whr = '"status" = 0 OR "status" = 1', ord = '"priority" DESC, "references" DESC';
-  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`, nam);
+  var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
   console.log('-row', row);
   return row;
 };

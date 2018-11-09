@@ -41,14 +41,11 @@ wikipedia-tts crawl
 wikipedia-tts crawl --loop 10
 # Crawling done recursively 10 times
 
-wikipedia-tts crawl --loop -1
-# Crawling done recursively indefinitely
-
 wikipedia-tts upload
 # Highest ranking page is crawled and uploaded to YouTube
 
-wikipedia-tts upload --loop -1
-# Pages are crawled and uploaded to YouTube indefinitely
+wikipedia-tts upload --loop 10
+# Uploading done recursively 10 times
 ```
 
 
