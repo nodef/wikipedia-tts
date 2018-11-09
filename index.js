@@ -187,11 +187,14 @@ async function upload(db, o) {
   var o = o||{};
   if(LOG) console.log('.upload', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
-    var row = await get(db);
-    if(!row) break;
-    var status = await uploadUnique(row.title, o);
-    await update(db, row.title, {status});
-    await crawlOne(db, row.title);
+    try {
+      var row = await get(db);
+      if(!row) break;
+      var status = await uploadUnique(row.title, o);
+      await update(db, row.title, {status});
+      await crawlOne(db, row.title);
+    }
+    catch(e) { console.error(e); }
   }
   return i;
 };
@@ -201,10 +204,13 @@ async function crawl(db, o) {
   var o = o||{}, status = 1;
   if(LOG) console.log('.crawl', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
-    var row = await get(db);
-    if(!row) break;
-    await update(db, row.title, {status});
-    await crawlOne(db, row.title);
+    try {
+      var row = await get(db);
+      if(!row) break;
+      await update(db, row.title, {status});
+      await crawlOne(db, row.title);
+    }
+    catch(e) { console.error(e); }
   }
 };
 module.exports = wikipediaTts;
