@@ -79,6 +79,7 @@ async function pageLinks(pag) {
 function sqlRunMapJoin(db, pre, dat, map, sep) {
   for(var i=0, I=dat.length, z= []; i<I; i+=256) {
     var prt = dat.slice(i, i+256);
+    console.log(pre+prt.map(map).join(sep), prt);
     z.push(db.run(pre+prt.map(map).join(sep), prt));
   }
   return Promise.all(z);
