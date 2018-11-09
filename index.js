@@ -178,7 +178,7 @@ async function remove(db, nam) {
 async function update(db, nam, o) {
   if(LOG) console.log('.update', nam, o);
   var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
-  await db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign(set, {title: nam}));
+  console.log(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign({title: nam}, o));
   return nam;
 };
 
