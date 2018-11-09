@@ -161,7 +161,7 @@ async function get(db, nam) {
 
 // Add a page to crawl list.
 async function add(db, nam, o) {
-  if(LOG) console.log('.add', o);
+  if(LOG) console.log('.add', nam, o);
   var o = Object.assign({}, ROW_DEFAULT, o);
   await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, o.priority, o.references, o.status);
   return nam;
@@ -178,7 +178,7 @@ async function remove(db, nam) {
 async function update(db, nam, o) {
   if(LOG) console.log('.update', nam, o);
   var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
-  await db.run(`UPDATE "pages" SET ${set} WHERE "name" = $name`, Object.assign(set, {title: nam}));
+  await db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, Object.assign(set, {title: nam}));
   return nam;
 };
 
