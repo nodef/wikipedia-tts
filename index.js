@@ -94,8 +94,8 @@ async function wikipediaTts(out, nam, o) {
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
   if(img.endsWith('.svg')) {
-    img = img.replace(/\/commons(\/thumb)?\//, '/commons/thumb/');
-    img = img.replace()+'/1024px-'+path.basename(img)+'.jpg';
+    img = img.replace(/\/wikipedia\/(.*?)\/(thumb\/)?/, '/wikipedia/$1/thumb/');
+    img = img+'/1024px-'+path.basename(img)+'.jpg';
   }
   if(!tags.includes(nam)) tags.unshift(nam);
   if(LOG) {
