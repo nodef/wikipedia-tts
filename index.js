@@ -23,6 +23,7 @@ const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
 const ROW_DEFAULT = {priority: 0, references: 0, status: 0};
+const FN_NOP = () => 0;
 
 
 // Write to file, return promise.
@@ -131,7 +132,7 @@ async function wikipediaTts(out, nam, o) {
   }
   var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
   var ext = path.extname(out||'output.json').toLowerCase();
-  var mod = ext==null? 2:(isVideo(out)? 1:0);
+  var mod = out==null? 2:(isVideo(out)? 1:0);
   var imgf = img.includes('://')? await downloadTemp(img):img;
   var audf = mod>0? tempy.file({extension: 'mp3'}):out;
   var vidf = mod>1? tempy.file({extension: 'mp4'}):out;
@@ -142,10 +143,10 @@ async function wikipediaTts(out, nam, o) {
   if(mod>=2) await fsWriteFile(capf, txt);
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
   if(mod>=2) await youtubeuploader({log: LOG, video: vidf, caption: capf, meta: metf});
-  if(imgf!==img) fs.unlink(imgf);
-  if(mod>0) fs.unlink(audf);
-  if(mod>1) fs.unlink(vidf);
-  if(mod>1) fs.unlink(capf);
+  if(imgf!==img) fs.unlink(imgf, FN_NOP);
+  if(mod>0) fs.unlink(audf, FN_NOP);
+  if(mod>1) fs.unlink(vidf, FN_NOP);
+  if(mod>1) fs.unlink(capf, FN_NOP);
   return p;
 };
 
@@ -170,7 +171,7 @@ async function getUpload(db) {
 // Upload page, if unique.
 async function uploadUnique(nam, o) {
   console.log('.uploadUnique', nam);
-  var ids = await youtubeuploader.get(nam);
+  var ids = await youtubeuploader.lines({title: nam});
   if(ids.length) {
     if(LOG) console.log('-already exists:', ids);
     return 2;
