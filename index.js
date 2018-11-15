@@ -1,14 +1,16 @@
 #!/usr/bin/env node
+const youtubeuploader = require('extra-youtubeuploader');
+const stillvideo = require('extra-stillvideo');
+const googletts = require('extra-googletts');
+const download = require('download');
 const isVideo = require('is-video');
 const boolean = require('boolean');
 const sqlite = require('sqlite');
+const tempy = require('tempy');
 const wiki = require('wikijs').default;
-const youtube = require('@wikipedia-tts/youtube');
-const english = require('@wikipedia-tts/english');
-const video = require('@wikipedia-tts/video');
+const cp = require('child_process');
 const https = require('https');
 const path = require('path');
-const cp = require('child_process');
 
 
 // Global variables
@@ -37,6 +39,14 @@ function httpsGet(opt) {
   });
 };
 
+// Download file to temp.
+async function downloadTemp(url) {
+  var ext = path.extname(url);
+  var pth = tempy.file({extension: ext.substring(1)});
+  await download(url, path.dirname(pth), {filename: path.basename(pth)});
+  return pth;
+};
+
 // Get page image from wikipedia pageimages API response.
 function wikiPageImage(res) {
   var pages = res.query.pages;
@@ -57,6 +67,14 @@ async function pageImage(pag) {
   for(var i of imgs||[])
     if(!i.endsWith('.svg')) return i;
   return img||BLANKIMAGE_URL;
+};
+
+// Get thumb image for page.
+async function pageThumbImage(pag) {
+  var url = await pageImage(pag);
+  if(!url.endsWith('.svg')) return url;
+  url = url.replace(/\/wikipedia\/(.*?)\/(thumb\/)?/, '/wikipedia/$1/thumb/');
+  return url+'/1024px-'+path.basename(url)+'.jpg';
 };
 
 // Get categories for page.
@@ -87,28 +105,27 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
   var o = o||{}, i = o.input||{};
-  if(LOG) console.log('@wikipediaTts:', out);
+  if(LOG) console.log('wikipediaTts:', out);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
-    i.text||p.content(), i.image||pageImage(p),
+    i.text||p.content(), i.image||pageThumbImage(p),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
-  if(img.endsWith('.svg')) {
-    img = img.replace(/\/wikipedia\/(.*?)\/(thumb\/)?/, '/wikipedia/$1/thumb/');
-    img = img+'/1024px-'+path.basename(img)+'.jpg';
-  }
   if(!tags.includes(nam)) tags.unshift(nam);
   if(LOG) {
-    console.log('-name:', nam);
-    console.log('-tags:', tags);
-    console.log('-mainImage:', img);
-    console.log('-description:', description);
+    console.log(' -name:', nam);
+    console.log(' -tags:', tags);
+    console.log(' -mainImage:', img);
+    console.log(' -description:', description);
   }
   var val = {title: nam, description, tags};
   var ext = path.extname(out||'output.json').toLowerCase();
-  if(ext==='.json') await youtube(out, txt, img, val, o);
-  else if(isVideo(out)) await video(out, txt, img, o);
-  else await english(out, txt, o);
+  var imgf = img.includes('://')? await downloadTemp(img):img;
+  var audf = tempy.file({extension: 'mp3'});
+  await googletts();
+  if(ext==='.json') await youtubeuploader(out, txt, img, val, o);
+  else if(isVideo(out)) await stillvideo(out, txt, img, o);
+  else await googletts(out, txt, o);
   return p;
 };
 
@@ -133,7 +150,7 @@ async function getUpload(db) {
 // Upload page, if unique.
 async function uploadUnique(nam, o) {
   console.log('.uploadUnique', nam);
-  var ids = await youtube.get(nam);
+  var ids = await youtubeuploader.get(nam);
   if(ids.length) {
     if(LOG) console.log('-already exists:', ids);
     return 2;

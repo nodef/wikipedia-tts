@@ -1,11 +1,17 @@
 Crawl Wikipedia pages and upload TTS to YouTube.
-
+> Do you want to:
+> - Upload Wikipedia TTS videos on YouTube?
+<br>
 
 
 ## setup
 
-1. Follow setup at [@wikipedia-tts/youtube].
-
+1. Install [Node.js], if not installed.
+2. Run `npm install -g wikipedia-tts` in [console].
+3. To install this as a package use `npm install wikipedia-tts`.
+1. Follow setup at [extra-googletts].
+2. Follow setup at [extra-youtubeuploader].
+<br>
 
 
 ## console
@@ -13,15 +19,15 @@ Crawl Wikipedia pages and upload TTS to YouTube.
 ```bash
 wikipedia-tts <command> [page] [options]
 # --help: show this help
-# -d | --db: crawl database file (crawl.db)
-# -o | --output: output file (null)
-# -p | --priority: update page priority (0)
+# -d | --db:     crawl database file (crawl.db)
+# -o | --output: output file
+# -p | --priority:   update page priority (0)
 # -r | --references: update page references (0)
-# -s | --status: update page status (0)
+# -s | --status:     update page status (0)
 # -l | --loop: loop count for crawl/upload (1)
 # Environment variables:
-# WIKIPEDIATTS_DB: crawl database file (crawl.db)
 # WIKIPEDIATTS_LOG: enable logging (0)
+# WIKIPEDIATTS_DB: crawl database file (crawl.db)
 
 wikipedia-tts "Ladakh"
 # "Ladakh" is uploaded to YouTube
