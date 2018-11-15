@@ -28,27 +28,22 @@ const FN_NOP = () => 0;
 
 // Write to file, return promise.
 function fsWriteFile(pth, dat, o) {
-  if(LOG) console.log('fsWriteFile:', pth);
-  return new Promise((fres, frej) => {
-    fs.writeFile(pth, dat, o, (err) => {
-      if(err) frej(err);
-      else fres(pth);
-    });
-  });
+  if(o && o.log) console.log('fsWriteFile:', pth);
+  return new Promise((fres, frej) => fs.writeFile(pth, dat, o, (err) => {
+    return err? frej(err):fres(pth);
+  }));
 };
+
 // Make HTTPS GET request.
 function httpsGet(opt) {
-  return new Promise((fres, frej) => {
-    var req = https.get(opt, (res) => {
-      var err = null, cod = res.statusCode, dat = '';
-      if(cod!==200) err = new Error(`HTTPS GET failed (${cod}).\n${opt}`);
-      if(err) { res.resume(); return frej(err); }
-      res.setEncoding('utf8');
-      res.on('data', (cnk) => dat+=cnk);
-      res.on('end', () => fres(dat));
-    });
-    req.on('error', frej);
-  });
+  return new Promise((fres, frej) => https.get(opt, (res) => {
+    var err = null, cod = res.statusCode, dat = '';
+    if(cod!==200) err = new Error(`HTTPS GET failed (${cod}).\n${opt}`);
+    if(err) { res.resume(); return frej(err); }
+    res.setEncoding('utf8');
+    res.on('data', (cnk) => dat+=cnk);
+    res.on('end', () => fres(dat));
+  }).on('error', frej));
 };
 
 // Download file to temp.
@@ -131,22 +126,21 @@ async function wikipediaTts(out, nam, o) {
     console.log(' -description:', description);
   }
   var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
-  var ext = path.extname(out||'output.json').toLowerCase();
   var mod = out==null? 2:(isVideo(out)? 1:0);
   var imgf = img.includes('://')? await downloadTemp(img):img;
-  var audf = mod>0? tempy.file({extension: 'mp3'}):out;
-  var vidf = mod>1? tempy.file({extension: 'mp4'}):out;
-  var capf = mod>1? tempy.file({extension: 'txt'}):null;
-  var metf = mod>1? tempy.file({extension: '.json'}):null;
+  var audf = mod>=1? tempy.file({extension: 'mp3'}):out;
+  var vidf = mod>=2? tempy.file({extension: 'mp4'}):out;
+  var capf = mod>=2? tempy.file({extension: 'txt'}):null;
+  var metf = mod>=2? tempy.file({extension: '.json'}):null;
   if(mod>=0) await googletts(audf, txt, {log: LOG});
   if(mod>=1) await stillvideo(vidf, audf, imgf, {log: LOG});
   if(mod>=2) await fsWriteFile(capf, txt);
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
   if(mod>=2) await youtubeuploader({log: LOG, video: vidf, caption: capf, meta: metf});
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
-  if(mod>0) fs.unlink(audf, FN_NOP);
-  if(mod>1) fs.unlink(vidf, FN_NOP);
-  if(mod>1) fs.unlink(capf, FN_NOP);
+  if(mod>=1) fs.unlink(audf, FN_NOP);
+  if(mod>=2) fs.unlink(vidf, FN_NOP);
+  if(mod>=2) fs.unlink(capf, FN_NOP);
   return p;
 };
 
