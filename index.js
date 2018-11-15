@@ -11,6 +11,7 @@ const wiki = require('wikijs').default;
 const cp = require('child_process');
 const https = require('https');
 const path = require('path');
+const fs = require('fs');
 
 
 // Global variables
@@ -24,6 +25,16 @@ const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8
 const ROW_DEFAULT = {priority: 0, references: 0, status: 0};
 
 
+// Write to file, return promise.
+function fsWriteFile(pth, dat, o) {
+  if(LOG) console.log('fsWriteFile:', pth);
+  return new Promise((fres, frej) => {
+    fs.writeFile(pth, dat, o, (err) => {
+      if(err) frej(err);
+      else fres(pth);
+    });
+  });
+};
 // Make HTTPS GET request.
 function httpsGet(opt) {
   return new Promise((fres, frej) => {
@@ -118,14 +129,23 @@ async function wikipediaTts(out, nam, o) {
     console.log(' -mainImage:', img);
     console.log(' -description:', description);
   }
-  var val = {title: nam, description, tags};
+  var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
   var ext = path.extname(out||'output.json').toLowerCase();
+  var mod = ext==null? 2:(isVideo(out)? 1:0);
   var imgf = img.includes('://')? await downloadTemp(img):img;
-  var audf = tempy.file({extension: 'mp3'});
-  await googletts();
-  if(ext==='.json') await youtubeuploader(out, txt, img, val, o);
-  else if(isVideo(out)) await stillvideo(out, txt, img, o);
-  else await googletts(out, txt, o);
+  var audf = mod>0? tempy.file({extension: 'mp3'}):out;
+  var vidf = mod>1? tempy.file({extension: 'mp4'}):out;
+  var capf = mod>1? tempy.file({extension: 'txt'}):null;
+  var metf = mod>1? tempy.file({extension: '.json'}):null;
+  if(mod>=0) await googletts(audf, txt, {log: LOG});
+  if(mod>=1) await stillvideo(vidf, audf, imgf, {log: LOG});
+  if(mod>=2) await fsWriteFile(capf, txt);
+  if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
+  if(mod>=2) await youtubeuploader({log: LOG, video: vidf, caption: capf, meta: metf});
+  if(imgf!==img) fs.unlink(imgf);
+  if(mod>0) fs.unlink(audf);
+  if(mod>1) fs.unlink(vidf);
+  if(mod>1) fs.unlink(capf);
   return p;
 };
 
