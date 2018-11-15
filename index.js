@@ -110,20 +110,20 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 };
 
 // Upload Wikipedia page TTS to Youtube.
-async function wikipediaTts(out, nam, o) {
+async function wikipediatts(out, nam, o) {
   var o = o||{}, i = o.input||{};
-  if(LOG) console.log('wikipediaTts:', out);
+  if(o.log) console.log('@wikipediatts:', out);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
     i.text||p.content(), i.image||pageThumbImage(p),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
   if(!tags.includes(nam)) tags.unshift(nam);
-  if(LOG) {
-    console.log(' -name:', nam);
-    console.log(' -tags:', tags);
-    console.log(' -mainImage:', img);
-    console.log(' -description:', description);
+  if(o.log) {
+    console.log(' .name:', nam);
+    console.log(' .tags:', tags);
+    console.log(' .mainImage:', img);
+    console.log(' .description:', description);
   }
   var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
   var mod = out==null? 2:(isVideo(out)? 1:0);
@@ -145,34 +145,37 @@ async function wikipediaTts(out, nam, o) {
 };
 
 // Get a page for crawl.
-async function getCrawl(db) {
-  if(LOG) console.log('.getCrawl');
+async function getCrawl(db, o) {
+  var o = o||{};
+  if(o.log) console.log('-getCrawl:');
   var whr = '"status" = 0', ord = '"priority" DESC, "references" DESC';
   var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
-  console.log('-row', row);
+  if(o.log) console.log(' .row', row);
   return row;
 };
 
 // Get a page for upload.
-async function getUpload(db) {
-  if(LOG) console.log('.getUpload');
+async function getUpload(db, o) {
+  var o = o||{};
+  if(o.log) console.log('-getUpload:');
   var whr = '"status" = 0 OR "status" = 1', ord = '"priority" DESC, "references" DESC';
   var row = await db.get(`SELECT * FROM "pages" WHERE ${whr} ORDER BY ${ord} LIMIT 1`);
-  console.log('-row', row);
+  if(o.log) console.log(' .row', row);
   return row;
 };
 
 // Upload page, if unique.
 async function uploadUnique(nam, o) {
-  console.log('.uploadUnique', nam);
+  var o = o||{};
+  if(o.log) console.log('-uploadUnique:', nam);
   var ids = await youtubeuploader.lines({title: nam});
   if(ids.length) {
-    if(LOG) console.log('-already exists:', ids);
+    if(o.log) console.log(' .already exists:', ids);
     return 2;
   }
-  try { await wikipediaTts(null, nam, o); }
+  try { await wikipediatts(null, nam, o); }
   catch(e) {
-    if(LOG) console.error(e);
+    console.error(e);
     return e.message==='No article found'? -2:-4;
   }
   return 4;
@@ -180,53 +183,55 @@ async function uploadUnique(nam, o) {
 
 // Crawl one page.
 async function crawlOne(db, nam) {
-  if(LOG) console.log('.crawlOne', nam);
+  var o = o||{};
+  if(o.log) console.log('-crawlOne:', nam);
   var p = await wiki().page(nam);
   var lnks = p? await pageLinks(p):[];
-  if(LOG) console.log('-links:', lnks.length);
+  if(o.log) console.log(' .links:', lnks.length);
   await sqlRunMapJoin(db, 'INSERT OR IGNORE INTO "pages" VALUES ', lnks, () => '(?, 0, 0, 0)', ', ');
   await sqlRunMapJoin(db, 'UPDATE "pages" SET "references" = "references" + 1 WHERE ', lnks, () => '"title" = ?', ' OR ');
   return p;
 };
 
 // Setup crawl list.
-async function setup(pth) {
+async function setup(pth, o) {
   var db = await sqlite.open(pth||DB);
-  if(LOG) console.log('.setup', pth);
+  if(o && o.log) console.log('-setup:', pth);
   var col = '"title" TEXT PRIMARY KEY, "priority" INTEGER, "references" INTEGER, "status" INTEGER';
   await db.exec(`CREATE TABLE IF NOT EXISTS "pages" (${col})`);
   return db;
 };
 
 // Get a page from crawl list.
-async function get(db, nam) {
-  if(LOG) console.log('.get', nam);
+async function get(db, nam, o) {
+  var o = o||{};
+  if(o.log) console.log('-get:', nam);
   var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
-  console.log('-row', row);
+  if(o.log) console.log(' .row:', row);
   return row;
 };
 
 // Add a page to crawl list.
-async function add(db, nam, o) {
-  if(LOG) console.log('.add', nam, o);
-  var o = Object.assign({}, ROW_DEFAULT, o);
-  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, o.priority, o.references, o.status);
+async function add(db, nam, v, o) {
+  if(o && o.log) console.log('-add:', nam, v);
+  var v = Object.assign({}, ROW_DEFAULT, v);
+  await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, v.priority, v.references, v.status);
   return nam;
 };
 
 // Remove a page from crawl list.
-async function remove(db, nam) {
-  if(LOG) console.log('.remove', nam);
+async function remove(db, nam, o) {
+  if(o && o.log) console.log('-remove:', nam);
   await db.run('DELETE FROM "pages" WHERE "title" = ?', nam);
   return nam;
 };
 
 // Update a page in crawl list.
-async function update(db, nam, o) {
-  if(LOG) console.log('.update', nam, o);
+async function update(db, nam, v, o) {
+  if(o && o.log) console.log('-update:', nam, v);
   var val = {$title: nam};
-  for(var k in o) val['$'+k] = o[k];
-  var set = Object.keys(o).map(col => `"${col}" = $${col}`).join(', ');
+  for(var k in v) val['$'+k] = v[k];
+  var set = Object.keys(v).map(col => `"${col}" = $${col}`).join(', ');
   db.run(`UPDATE "pages" SET ${set} WHERE "title" = $title`, val);
   return nam;
 };
@@ -234,14 +239,14 @@ async function update(db, nam, o) {
 // Upload a page.
 async function upload(db, o) {
   var o = o||{};
-  if(LOG) console.log('.upload', o);
+  if(o.log) console.log('-upload:', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
     try {
-      var row = await getUpload(db);
+      var row = await getUpload(db, o);
       if(!row) break;
       var status = await uploadUnique(row.title, o);
-      await update(db, row.title, {status});
-      if(row.status===0) await crawlOne(db, row.title);
+      await update(db, row.title, {status}, o);
+      if(row.status===0) await crawlOne(db, row.title, o);
     }
     catch(e) { console.error(e); }
   }
@@ -251,26 +256,26 @@ async function upload(db, o) {
 // Crawl a page.
 async function crawl(db, o) {
   var o = o||{}, status = 1;
-  if(LOG) console.log('.crawl', o);
+  if(o.log) console.log('-crawl:', o);
   for(var i=0, I=o.loop||1; i<I; i++) {
-    // try {
-      var row = await getCrawl(db);
+    try {
+      var row = await getCrawl(db, o);
       if(!row) break;
-      await update(db, row.title, {status});
-      await crawlOne(db, row.title);
-    // }
-    // catch(e) { console.error(e); }
+      await update(db, row.title, {status}, o);
+      await crawlOne(db, row.title, o);
+    }
+    catch(e) { console.error(e); }
   }
   return i;
 };
-module.exports = wikipediaTts;
-wikipediaTts.setup = setup;
-wikipediaTts.get = get;
-wikipediaTts.add = add;
-wikipediaTts.remove = remove;
-wikipediaTts.update = update;
-wikipediaTts.upload = upload;
-wikipediaTts.crawl = crawl;
+module.exports = wikipediatts;
+wikipediatts.setup = setup;
+wikipediatts.get = get;
+wikipediatts.add = add;
+wikipediatts.remove = remove;
+wikipediatts.update = update;
+wikipediatts.upload = upload;
+wikipediatts.crawl = crawl;
 
 
 // Main.
@@ -289,7 +294,7 @@ async function main() {
     else if(!cmd) cmd = A[i];
     else if(!nam) nam = A[i];
   }
-  if(!cmds.has(cmd)) return wikipediaTts(out, nam);
+  if(!cmds.has(cmd)) return wikipediatts(out, nam);
   var db = await setup(dbp);
   if(cmd==='setup') return;
   else if(cmd==='get') await get(db, nam);
