@@ -8,6 +8,7 @@ const boolean = require('boolean');
 const sqlite = require('sqlite');
 const tempy = require('tempy');
 const wiki = require('wikijs').default;
+const jimp = require('jimp');
 const cp = require('child_process');
 const https = require('https');
 const path = require('path');
@@ -16,19 +17,24 @@ const fs = require('fs');
 
 // Global variables
 const E = process.env;
-const A = process.argv;
-const LOG = boolean(E['WIKIPEDIATTS_LOG']||'0');
-const DB = E['WIKIPEDIATTS_DB']||'crawl.db';
+const OPTIONS = {
+  log: boolean(E['WIKIPEDIATTS_LOG']||'0'),
+  db: E['WIKIPEDIATTS_DB']||'crawl.db',
+  times: parseInt(E['WIKIPEDIATTS_TIMES']||'1', 10)
+};
+const VALUE = {
+  priority: parseInt(E['WIKIPEDIATTS_PRIORITY']||'0', 10),
+  references: parseInt(E['WIKIPEDIATTS_REFERENCES']||'0', 10),
+  status: parseInt(E['WIKIPEDIATTS_STATUS']||'0', 10)
+};
 const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
-const ROW_DEFAULT = {priority: 0, references: 0, status: 0};
 const FN_NOP = () => 0;
 
 
 // Write to file, return promise.
 function fsWriteFile(pth, dat, o) {
-  if(o && o.log) console.log('fsWriteFile:', pth);
   return new Promise((fres, frej) => fs.writeFile(pth, dat, o, (err) => {
     return err? frej(err):fres(pth);
   }));
@@ -52,6 +58,15 @@ async function downloadTemp(url) {
   var pth = tempy.file({extension: ext.substring(1)});
   await download(url, path.dirname(pth), {filename: path.basename(pth)});
   return pth;
+};
+
+// Transform image to JPEG.
+async function imageTransform(pth) {
+  pth = await downloadTemp(pth);
+  var img = await jimp.read(pth);
+  img.scaleToFit(1024, 1024);
+  pth = tempy.file({extension: 'jpg'});
+  return img.write(pth);
 };
 
 // Get page image from wikipedia pageimages API response.
@@ -111,15 +126,15 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediatts(out, nam, o) {
-  var o = o||{}, i = o.input||{};
-  if(o.log) console.log('@wikipediatts:', out);
+  var o = o||{}, l = o.log||false, i = o.input||{};
+  if(l) console.log('@wikipediatts:', out);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
     i.text||p.content(), i.image||pageThumbImage(p),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
   if(!tags.includes(nam)) tags.unshift(nam);
-  if(o.log) {
+  if(l) {
     console.log(' .name:', nam);
     console.log(' .tags:', tags);
     console.log(' .mainImage:', img);
@@ -127,16 +142,16 @@ async function wikipediatts(out, nam, o) {
   }
   var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
   var mod = out==null? 2:(isVideo(out)? 1:0);
-  var imgf = img.includes('://')? await downloadTemp(img):img;
+  var imgf = img.includes('://')? await imageTransform(img):img;
   var audf = mod>=1? tempy.file({extension: 'mp3'}):out;
   var vidf = mod>=2? tempy.file({extension: 'mp4'}):out;
   var capf = mod>=2? tempy.file({extension: 'txt'}):null;
   var metf = mod>=2? tempy.file({extension: '.json'}):null;
-  if(mod>=0) await googletts(audf, txt, {log: LOG});
-  if(mod>=1) await stillvideo(vidf, audf, imgf, {log: LOG});
+  if(mod>=0) await googletts(audf, txt, {log: l});
+  if(mod>=1) await stillvideo(vidf, audf, imgf, {log: l});
   if(mod>=2) await fsWriteFile(capf, txt);
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
-  if(mod>=2) await youtubeuploader({log: LOG, video: vidf, caption: capf, meta: metf});
+  if(mod>=2) await youtubeuploader({log: l, video: vidf, caption: capf, meta: metf});
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
   if(mod>=1) fs.unlink(audf, FN_NOP);
   if(mod>=2) fs.unlink(vidf, FN_NOP);
@@ -214,7 +229,7 @@ async function get(db, nam, o) {
 // Add a page to crawl list.
 async function add(db, nam, v, o) {
   if(o && o.log) console.log('-add:', nam, v);
-  var v = Object.assign({}, ROW_DEFAULT, v);
+  var v = Object.assign({}, VALUE, v);
   await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, v.priority, v.references, v.status);
   return nam;
 };
@@ -278,30 +293,30 @@ wikipediatts.upload = upload;
 wikipediatts.crawl = crawl;
 
 
-// Main.
-async function main() {
-  var cmd = '', nam = '';
-  var dbp = DB, out = '', priority = 0, references = 0, status = 0, loop = 1;
+// Run on shell.
+async function shell(A) {
+  var cmd = '', nam = '', out = '';
+  var o = _.merge({}, OPTIONS), v = {};
   var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
   for(var i=2, I=A.length; i<I; i++) {
     if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
-    else if(A[i]==='-d' || A[i]==='--db') dbp = A[++i];
+    else if(A[i]==='-d' || A[i]==='--db') o.db = A[++i];
     else if(A[i]==='-o' || A[i]==='--output') out = A[++i];
-    else if(A[i]==='-p' || A[i]==='--priority') priority = parseInt(A[++i], 10);
-    else if(A[i]==='-r' || A[i]==='--references') references = parseInt(A[++i], 10);
-    else if(A[i]==='-s' || A[i]==='--status') status = parseInt(A[++i], 10);
-    else if(A[i]==='-l' || A[i]==='--loop') loop = parseInt(A[++i], 10);
+    else if(A[i]==='-p' || A[i]==='--priority') v.priority = parseInt(A[++i], 10);
+    else if(A[i]==='-r' || A[i]==='--references') v.references = parseInt(A[++i], 10);
+    else if(A[i]==='-s' || A[i]==='--status') v.status = parseInt(A[++i], 10);
+    else if(A[i]==='-t' || A[i]==='--times') o.times = parseInt(A[++i], 10);
     else if(!cmd) cmd = A[i];
     else if(!nam) nam = A[i];
   }
-  if(!cmds.has(cmd)) return wikipediatts(out, nam);
-  var db = await setup(dbp);
+  if(!cmds.has(cmd)) return wikipediatts(out, nam, o);
+  var db = await setup(o.db, o);
   if(cmd==='setup') return;
-  else if(cmd==='get') await get(db, nam);
-  else if(cmd==='add') await add(db, nam, {priority, references, status});
-  else if(cmd==='remove') await remove(db, nam);
-  else if(cmd==='update') await update(db, nam, {priority, references, status});
-  else if(cmd==='upload') await upload(db, {loop});
+  else if(cmd==='get') await get(db, nam, o);
+  else if(cmd==='add') await add(db, nam, v, o);
+  else if(cmd==='remove') await remove(db, nam, o);
+  else if(cmd==='update') await update(db, nam, v, o);
+  else if(cmd==='upload') await upload(db, o);
   else await crawl(db, {loop});
 };
-if(require.main===module) main();
+if(require.main===module) shell(process.argv);

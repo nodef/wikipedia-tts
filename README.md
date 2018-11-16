@@ -19,12 +19,13 @@ Crawl Wikipedia pages and upload TTS to YouTube.
 ```bash
 wikipedia-tts <command> [page] [options]
 # --help: show this help
-# -d | --db:     crawl database file (crawl.db)
-# -o | --output: output file
-# -p | --priority:   update page priority (0)
-# -r | --references: update page references (0)
-# -s | --status:     update page status (0)
-# -l | --loop: loop count for crawl/upload (1)
+# -l, --log: enable log
+# -o, --output: set output file
+# -d, --db:     set crawl database file (crawl.db)
+# -p, --priority:   set page priority (0)
+# -r, --references: set page references (0)
+# -s, --status:     set page status (0)
+# -t, --times: times to crawl/upload (1)
 # Environment variables:
 # WIKIPEDIATTS_LOG: enable logging (0)
 # WIKIPEDIATTS_DB: crawl database file (crawl.db)
