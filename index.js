@@ -29,11 +29,11 @@ const OPTIONS = {
     descriptionpath: E['YOUTUBEUPLOADER_DESCRIPTIONPATH']||path.join(__dirname, 'description.txt'),
     title: E['YOUTUBEUPLOADER_TITLE']||'${title} | Wikipedia audio article',
     tags: E['YOUTUBEUPLOADER_TAGS']||'${tags},wikipedia audio article,learning by listening,increases imagination and understanding,improves your listening skills,improves your own spoken accent,learn while on the move,reduce eye strain,text to speech',
-    privacyStatus: E['YOUTUBEUPLOADER_PRIVACYSTATUS']||'public',
+    privacystatus: E['YOUTUBEUPLOADER_PRIVACYSTATUS']||'public',
     embeddable: boolean(E['YOUTUBEUPLOADER_EMBEDDABLE']||'true'),
     license: E['YOUTUBEUPLOADER_LICENSE']||'creativeCommon',
-    publicStatsViewable: boolean(E['YOUTUBEUPLOADER_PUBLICSTATSVIEWABLE']||'true'),
-    categoryId: E['YOUTUBEUPLOADER_CATEGORY']||'27'
+    publicstatsviewable: boolean(E['YOUTUBEUPLOADER_PUBLICSTATSVIEWABLE']||'true'),
+    category: E['YOUTUBEUPLOADER_CATEGORY']||'27'
   }
 };
 const VALUE = {
