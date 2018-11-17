@@ -342,9 +342,10 @@ module.exports = wikipediatts;
 
 // Run on shell.
 async function shell(a) {
-  for(var i=2, I=a.length, o={}; i<I; i++)
+  for(var i=2, I=a.length, o={}; i<I;)
     i = options(o, a[i], a, i);
   var cmd = o.command, out = o.output, nam = o.input;
+  console.log(o);
   if(o.help) return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
   if(!COMMANDS.has(cmd)) return wikipediatts(out, nam, o);
   var db = await setup(o.db, o);
