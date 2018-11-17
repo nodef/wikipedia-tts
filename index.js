@@ -206,7 +206,7 @@ async function uploadUnique(nam, o) {
 };
 
 // Crawl one page.
-async function crawlOne(db, nam) {
+async function crawlOne(db, nam, o) {
   var o = o||{};
   if(o.log) console.log('-crawlOne:', nam);
   var p = await wiki().page(nam);
@@ -219,8 +219,9 @@ async function crawlOne(db, nam) {
 
 // Setup crawl list.
 async function setup(pth, o) {
-  var db = await sqlite.open(pth||DB);
-  if(o && o.log) console.log('-setup:', pth);
+  var o = _.merge({}, OPTIONS, o), pth = pth||o.db;
+  var db = await sqlite.open(pth);
+  if(o.log) console.log('-setup:', pth);
   var col = '"title" TEXT PRIMARY KEY, "priority" INTEGER, "references" INTEGER, "status" INTEGER';
   await db.exec(`CREATE TABLE IF NOT EXISTS "pages" (${col})`);
   return db;
@@ -228,7 +229,9 @@ async function setup(pth, o) {
 
 // Get a page from crawl list.
 async function get(db, nam, o) {
-  var o = o||{};
+  var o = _.merge({}, OPTIONS, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  var nam = nam||o.input;
   if(o.log) console.log('-get:', nam);
   var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
   if(o.log) console.log(' .row:', row);
@@ -236,23 +239,31 @@ async function get(db, nam, o) {
 };
 
 // Add a page to crawl list.
-async function add(db, nam, v, o) {
-  if(o && o.log) console.log('-add:', nam, v);
-  var v = Object.assign({}, VALUE, v);
+async function add(db, nam, o) {
+  var o = _.merge({}, OPTIONS, VALUE, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  var nam = nam||o.input, v = _.pick(o, ['priority', 'references', 'status']);
+  if(o.log) console.log('-add:', nam, v);
   await db.run('INSERT OR IGNORE INTO "pages" VALUES (?, ?, ?, ?)', nam, v.priority, v.references, v.status);
   return nam;
 };
 
 // Remove a page from crawl list.
 async function remove(db, nam, o) {
-  if(o && o.log) console.log('-remove:', nam);
+  var o = _.merge({}, OPTIONS, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  var nam = nam||o.input;
+  if(o.log) console.log('-remove:', nam);
   await db.run('DELETE FROM "pages" WHERE "title" = ?', nam);
   return nam;
 };
 
 // Update a page in crawl list.
-async function update(db, nam, v, o) {
-  if(o && o.log) console.log('-update:', nam, v);
+async function update(db, nam, o) {
+  var o = _.merge({}, OPTIONS, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  var nam = nam||o.input, v = _.pick(o, ['priority', 'references', 'status']);
+  if(o.log) console.log('-update:', nam, v);
   var val = {$title: nam};
   for(var k in v) val['$'+k] = v[k];
   var set = Object.keys(v).map(col => `"${col}" = $${col}`).join(', ');
@@ -262,8 +273,9 @@ async function update(db, nam, v, o) {
 
 // Upload a page.
 async function upload(db, o) {
-  var o = o||{};
-  if(o.log) console.log('-upload:', o);
+  var o = _.merge({}, OPTIONS, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  if(o.log) console.log('-upload:', _.pick(o, ['loop']));
   for(var i=0, I=o.loop||1; i<I; i++) {
     try {
       var row = await getUpload(db, o);
@@ -279,8 +291,10 @@ async function upload(db, o) {
 
 // Crawl a page.
 async function crawl(db, o) {
-  var o = o||{}, status = 1;
-  if(o.log) console.log('-crawl:', o);
+  var o = _.merge({}, OPTIONS, o), db = db||o.db;
+  db = typeof db==='string'? await setup(db, o):db;
+  var status = 1;
+  if(o.log) console.log('-crawl:', _.pick(o, ['loop']));
   for(var i=0, I=o.loop||1; i<I; i++) {
     try {
       var row = await getCrawl(db, o);
@@ -294,27 +308,26 @@ async function crawl(db, o) {
 };
 
 // Get options from arguments.
-function options(a, z={}) {
-  var audio = {}, video = {}, youtube = {};
-  for(var i=2, I=a.length; i<I; i++) {
-    if(a[i]==='--help') z.help = true;
-    else if(a[i]==='-d' || a[i]==='--db') z.db = a[++i];
-    else if(a[i]==='-o' || a[i]==='--output') z.output = a[++i];
-    else if(a[i]==='-p' || a[i]==='--priority') z.priority = a[++i];
-    else if(a[i]==='-r' || a[i]==='--references') z.references = a[++i];
-    else if(a[i]==='-s' || a[i]==='--status') z.status = a[++i];
-    else if(a[i]==='-t' || a[i]==='--times') z.times = a[++i];
-    else if(a[i].startsWith('-a')) i += googletts.options(audio, '-'+a.substring(2), a, i);
-    else if(a[i].startsWith('-v')) i += stillvideo.options(video, '-'+a.substring(2), a, i);
-    else if(a[i].startsWith('-y')) i += youtubeuploader.options(youtube, '-'+a.substring(2), a, i);
-    else if(a[i].startsWith('--audio_')) i += googletts.options(audio, '--'+a[i].substring(8), a, i);
-    else if(a[i].startsWith('--video_')) i += stillvideo.options(video, '--'+a[i].substring(8), a, i);
-    else if(a[i].startsWith('--youtube_')) i += youtubeuploader.options(youtube, '--'+a[i].substring(10), a, i);
-    else if(!z.command) z.command = a[i];
-    else if(!z.value) z.value = a[i];
-    else z.input = a[i];
-  }
-  return Object.assign(z, {audio, video, youtube});
+function options(o, k, a, i) {
+  o.audio = o.audio||{};
+  o.video = o.video||{};
+  o.youtube = o.youtube||{};
+  if(k==='--help') o.help = true;
+  else if(k==='-d' || k==='--db') o.db = a[++i];
+  else if(k==='-o' || k==='--output') o.output = a[++i];
+  else if(k==='-p' || k==='--priority') o.priority = a[++i];
+  else if(k==='-r' || k==='--references') o.references = a[++i];
+  else if(k==='-s' || k==='--status') o.status = a[++i];
+  else if(k==='-t' || k==='--times') o.times = a[++i];
+  else if(k.startsWith('-a')) i = googletts.options(o.audio, '-'+a.substring(2), a, i);
+  else if(k.startsWith('-v')) i = stillvideo.options(o.video, '-'+a.substring(2), a, i);
+  else if(k.startsWith('-y')) i = youtubeuploader.options(o.youtube, '-'+a.substring(2), a, i);
+  else if(k.startsWith('--audio_')) i = googletts.options(o.audio, '--'+k.substring(8), a, i);
+  else if(k.startsWith('--video_')) i = stillvideo.options(o.video, '--'+k.substring(8), a, i);
+  else if(k.startsWith('--youtube_')) i = youtubeuploader.options(o.youtube, '--'+k.substring(10), a, i);
+  else if(!o.command) o.command = a[i];
+  else o.input = a[i];
+  return i+1;
 };
 
 wikipediatts.setup = setup;
@@ -324,21 +337,21 @@ wikipediatts.remove = remove;
 wikipediatts.update = update;
 wikipediatts.upload = upload;
 wikipediatts.crawl = crawl;
+wikipediatts.options = options;
 module.exports = wikipediatts;
 
 // Run on shell.
 async function shell(a) {
-  var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
   for(var i=2, I=a.length, o={}; i<I; i++)
-    i += options(o, a[i], a, i);
+    i = options(o, a[i], a, i);
   if(o.help) return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
-  if(!COMMANDS.has(cmd)) return wikipediatts(o.output, o.value, o);
+  if(!COMMANDS.has(cmd)) return wikipediatts(o.output, o.input, o);
   var db = await setup(o.db, o);
   if(cmd==='setup') return;
-  else if(cmd==='get') await get(db, o.value, o);
-  else if(cmd==='add') await add(db, o.value, o, o);
-  else if(cmd==='remove') await remove(db, o.value, o);
-  else if(cmd==='update') await update(db, o.value, o, o);
+  else if(cmd==='get') await get(db, o.input, o);
+  else if(cmd==='add') await add(db, o.input, o);
+  else if(cmd==='remove') await remove(db, o.input, o);
+  else if(cmd==='update') await update(db, o.input, o);
   else if(cmd==='upload') await upload(db, o);
   else await crawl(db, o);
 };
