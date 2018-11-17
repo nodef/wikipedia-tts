@@ -8,7 +8,6 @@ const boolean = require('boolean');
 const sqlite = require('sqlite');
 const tempy = require('tempy');
 const wiki = require('wikijs').default;
-const jimp = require('jimp');
 const cp = require('child_process');
 const https = require('https');
 const path = require('path');
@@ -20,7 +19,21 @@ const E = process.env;
 const OPTIONS = {
   log: boolean(E['WIKIPEDIATTS_LOG']||'0'),
   db: E['WIKIPEDIATTS_DB']||'crawl.db',
-  times: parseInt(E['WIKIPEDIATTS_TIMES']||'1', 10)
+  times: parseInt(E['WIKIPEDIATTS_TIMES']||'1', 10),
+  video: {
+    fitX: parseInt(E['STILLVIDEO_FITX']||'1024', 10),
+    fitY: parseInt(E['STILLVIDEO_FITY']||'1024', 10)
+  },
+  youtube: {
+    descriptionpath: E['YOUTUBEUPLOADER_DESCRIPTIONPATH']||path.join(__dirname, 'description.txt'),
+    title: E['YOUTUBEUPLOADER_TITLE']||'${title} | Wikipedia audio article',
+    tags: E['YOUTUBEUPLOADER_TAGS']||'${tags},wikipedia audio article,learning by listening,increases imagination and understanding,improves your listening skills,improves your own spoken accent,learn while on the move,reduce eye strain,text to speech',
+    privacyStatus: E['YOUTUBEUPLOADER_PRIVACYSTATUS']||'public',
+    embeddable: boolean(E['YOUTUBEUPLOADER_EMBEDDABLE']||'true'),
+    license: E['YOUTUBEUPLOADER_LICENSE']||'creativeCommon',
+    publicStatsViewable: boolean(E['YOUTUBEUPLOADER_PUBLICSTATSVIEWABLE']||'true'),
+    categoryId: E['YOUTUBEUPLOADER_CATEGORY']||'27'
+  }
 };
 const VALUE = {
   priority: parseInt(E['WIKIPEDIATTS_PRIORITY']||'0', 10),
@@ -30,6 +43,7 @@ const VALUE = {
 const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
+const COMMANDS = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
 const FN_NOP = () => 0;
 
 
@@ -58,15 +72,6 @@ async function downloadTemp(url) {
   var pth = tempy.file({extension: ext.substring(1)});
   await download(url, path.dirname(pth), {filename: path.basename(pth)});
   return pth;
-};
-
-// Transform image to JPEG.
-async function imageTransform(pth) {
-  pth = await downloadTemp(pth);
-  var img = await jimp.read(pth);
-  img.scaleToFit(1024, 1024);
-  pth = tempy.file({extension: 'jpg'});
-  return img.write(pth);
 };
 
 // Get page image from wikipedia pageimages API response.
@@ -140,18 +145,18 @@ async function wikipediatts(out, nam, o) {
     console.log(' .mainImage:', img);
     console.log(' .description:', description);
   }
-  var val = {title: nam, description, tags, privacyStatus: 'public', embeddable: true, license: 'creativeCommon', publicStatsViewable: true, categoryId: '27', language: 'en'};
+  var val = {title: nam, description, tags};
   var mod = out==null? 2:(isVideo(out)? 1:0);
-  var imgf = img.includes('://')? await imageTransform(img):img;
+  var imgf = img.includes('://')? await downloadTemp(img):img;
   var audf = mod>=1? tempy.file({extension: 'mp3'}):out;
   var vidf = mod>=2? tempy.file({extension: 'mp4'}):out;
   var capf = mod>=2? tempy.file({extension: 'txt'}):null;
   var metf = mod>=2? tempy.file({extension: '.json'}):null;
-  if(mod>=0) await googletts(audf, txt, {log: l});
-  if(mod>=1) await stillvideo(vidf, audf, imgf, {log: l});
+  if(mod>=0) await googletts(audf, txt, Object.assign({log: l}, o.audio));
+  if(mod>=1) await stillvideo(vidf, audf, imgf, Object.assign({log: l}, o.video));
   if(mod>=2) await fsWriteFile(capf, txt);
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
-  if(mod>=2) await youtubeuploader({log: l, video: vidf, caption: capf, meta: metf});
+  if(mod>=2) await youtubeuploader(Object.assign({log: l, video: vidf, caption: capf, meta: metf}, o.youtube));
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
   if(mod>=1) fs.unlink(audf, FN_NOP);
   if(mod>=2) fs.unlink(vidf, FN_NOP);
@@ -283,7 +288,31 @@ async function crawl(db, o) {
   }
   return i;
 };
-module.exports = wikipediatts;
+
+// Get options from arguments.
+function options(a, z={}) {
+  var audio = {}, video = {}, youtube = {};
+  for(var i=2, I=a.length; i<I; i++) {
+    if(a[i]==='--help') z.help = true;
+    else if(a[i]==='-d' || a[i]==='--db') z.db = a[++i];
+    else if(a[i]==='-o' || a[i]==='--output') z.output = a[++i];
+    else if(a[i]==='-p' || a[i]==='--priority') z.priority = a[++i];
+    else if(a[i]==='-r' || a[i]==='--references') z.references = a[++i];
+    else if(a[i]==='-s' || a[i]==='--status') z.status = a[++i];
+    else if(a[i]==='-t' || a[i]==='--times') z.times = a[++i];
+    else if(a[i].startsWith('-a')) i += googletts.options(audio, '-'+a.substring(2), a, i);
+    else if(a[i].startsWith('-v')) i += stillvideo.options(video, '-'+a.substring(2), a, i);
+    else if(a[i].startsWith('-y')) i += youtubeuploader.options(youtube, '-'+a.substring(2), a, i);
+    else if(a[i].startsWith('--audio_')) i += googletts.options(audio, '--'+a[i].substring(8), a, i);
+    else if(a[i].startsWith('--video_')) i += stillvideo.options(video, '--'+a[i].substring(8), a, i);
+    else if(a[i].startsWith('--youtube_')) i += youtubeuploader.options(youtube, '--'+a[i].substring(10), a, i);
+    else if(!z.command) z.command = a[i];
+    else if(!z.value) z.value = a[i];
+    else z.input = a[i];
+  }
+  return Object.assign(z, {audio, video, youtube});
+};
+
 wikipediatts.setup = setup;
 wikipediatts.get = get;
 wikipediatts.add = add;
@@ -291,32 +320,22 @@ wikipediatts.remove = remove;
 wikipediatts.update = update;
 wikipediatts.upload = upload;
 wikipediatts.crawl = crawl;
-
+module.exports = wikipediatts;
 
 // Run on shell.
-async function shell(A) {
-  var cmd = '', nam = '', out = '';
-  var o = _.merge({}, OPTIONS), v = {};
+async function shell(a) {
   var cmds = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
-  for(var i=2, I=A.length; i<I; i++) {
-    if(A[i]==='--help') return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
-    else if(A[i]==='-d' || A[i]==='--db') o.db = A[++i];
-    else if(A[i]==='-o' || A[i]==='--output') out = A[++i];
-    else if(A[i]==='-p' || A[i]==='--priority') v.priority = parseInt(A[++i], 10);
-    else if(A[i]==='-r' || A[i]==='--references') v.references = parseInt(A[++i], 10);
-    else if(A[i]==='-s' || A[i]==='--status') v.status = parseInt(A[++i], 10);
-    else if(A[i]==='-t' || A[i]==='--times') o.times = parseInt(A[++i], 10);
-    else if(!cmd) cmd = A[i];
-    else if(!nam) nam = A[i];
-  }
-  if(!cmds.has(cmd)) return wikipediatts(out, nam, o);
+  for(var i=2, I=a.length, o={}; i<I; i++)
+    i += options(o, a[i], a, i);
+  if(o.help) return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
+  if(!COMMANDS.has(cmd)) return wikipediatts(o.output, o.value, o);
   var db = await setup(o.db, o);
   if(cmd==='setup') return;
-  else if(cmd==='get') await get(db, nam, o);
-  else if(cmd==='add') await add(db, nam, v, o);
-  else if(cmd==='remove') await remove(db, nam, o);
-  else if(cmd==='update') await update(db, nam, v, o);
+  else if(cmd==='get') await get(db, o.value, o);
+  else if(cmd==='add') await add(db, o.value, o, o);
+  else if(cmd==='remove') await remove(db, o.value, o);
+  else if(cmd==='update') await update(db, o.value, o, o);
   else if(cmd==='upload') await upload(db, o);
-  else await crawl(db, {loop});
+  else await crawl(db, o);
 };
 if(require.main===module) shell(process.argv);
