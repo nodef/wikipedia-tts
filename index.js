@@ -344,14 +344,15 @@ module.exports = wikipediatts;
 async function shell(a) {
   for(var i=2, I=a.length, o={}; i<I; i++)
     i = options(o, a[i], a, i);
+  var cmd = o.command, out = o.output, nam = o.input;
   if(o.help) return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
-  if(!COMMANDS.has(cmd)) return wikipediatts(o.output, o.input, o);
+  if(!COMMANDS.has(cmd)) return wikipediatts(out, nam, o);
   var db = await setup(o.db, o);
   if(cmd==='setup') return;
-  else if(cmd==='get') await get(db, o.input, o);
-  else if(cmd==='add') await add(db, o.input, o);
-  else if(cmd==='remove') await remove(db, o.input, o);
-  else if(cmd==='update') await update(db, o.input, o);
+  else if(cmd==='get') await get(db, nam, o);
+  else if(cmd==='add') await add(db, nam, o);
+  else if(cmd==='remove') await remove(db, nam, o);
+  else if(cmd==='update') await update(db, nam, o);
   else if(cmd==='upload') await upload(db, o);
   else await crawl(db, o);
 };
