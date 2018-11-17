@@ -1,6 +1,6 @@
 {
   "name": "wikipedia-tts",
-  "version": "1.1.20",
+  "version": "1.1.21",
   "description": "Crawl Wikipedia pages and upload TTS to Youtube.",
   "main": "index.js",
   "scripts": {
@@ -39,6 +39,7 @@
     "extra-stillvideo": "^1.2.1",
     "extra-youtubeuploader": "^19.1.8",
     "is-video": "^1.0.1",
+    "lodash": "^4.17.11",
     "sqlite": "^3.0.0",
     "tempy": "^0.2.1",
     "wikijs": "^4.10.0"

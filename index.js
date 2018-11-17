@@ -2,12 +2,13 @@
 const youtubeuploader = require('extra-youtubeuploader');
 const stillvideo = require('extra-stillvideo');
 const googletts = require('extra-googletts');
+const wiki = require('wikijs').default;
 const download = require('download');
 const isVideo = require('is-video');
 const boolean = require('boolean');
 const sqlite = require('sqlite');
 const tempy = require('tempy');
-const wiki = require('wikijs').default;
+const _ = require('lodash');
 const cp = require('child_process');
 const https = require('https');
 const path = require('path');
@@ -44,6 +45,7 @@ const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
 const COMMANDS = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', 'crawl']);
+const IMGFORMAT = /\.(png|jpe?g)$/i;
 const FN_NOP = () => 0;
 
 
@@ -87,21 +89,22 @@ function wikiPageImage(res) {
 async function pageImage(pag) {
   var wurl = PAGEIMAGES_URL+encodeURIComponent(pag.raw.title);
   var img = wikiPageImage(JSON.parse(await httpsGet(wurl)));
-  if(img) return img;
+  if(IMGFORMAT.test(img)) return img;
   var img = await pag.mainImage();
-  if(img && !img.endsWith('.svg')) return img;
+  if(IMGFORMAT.test(img)) return img;
   var imgs = await pag.images();
   for(var i of imgs||[])
-    if(!i.endsWith('.svg')) return i;
+    if(IMGFORMAT.test(i)) return i;
   return img||BLANKIMAGE_URL;
 };
 
 // Get thumb image for page.
-async function pageThumbImage(pag) {
+async function pageThumbImage(pag, o) {
   var url = await pageImage(pag);
   if(!url.endsWith('.svg')) return url;
+  var fx = _.get(o||{}, 'video.fitX', OPTIONS.video.fitX);
   url = url.replace(/\/wikipedia\/(.*?)\/(thumb\/)?/, '/wikipedia/$1/thumb/');
-  return url+'/1024px-'+path.basename(url)+'.jpg';
+  return url+`/${fx}px-`+path.basename(url)+'.jpg';
 };
 
 // Get categories for page.
@@ -131,11 +134,12 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediatts(out, nam, o) {
-  var o = o||{}, l = o.log||false, i = o.input||{};
+  var o = o||{}, l = o.log, i = o.input||{};
+  var out = out||o.output, nam = nam||o.input;
   if(l) console.log('@wikipediatts:', out);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
-    i.text||p.content(), i.image||pageThumbImage(p),
+    i.text||p.content(), i.image||pageThumbImage(p, o),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
   if(!tags.includes(nam)) tags.unshift(nam);
