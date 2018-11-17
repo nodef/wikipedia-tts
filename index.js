@@ -133,7 +133,7 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 };
 
 // Upload Wikipedia page TTS to Youtube.
-async function wikipediatts(out, nam, o) {
+async function wikipediaTts(out, nam, o) {
   var o = o||{}, l = o.log, i = o.input||{};
   var out = out||o.output, nam = nam||o.input;
   if(l) console.log('@wikipediatts:', out, nam);
@@ -197,7 +197,7 @@ async function uploadUnique(nam, o) {
     if(o.log) console.log(' .already exists:', ids);
     return 2;
   }
-  try { await wikipediatts(null, nam, o); }
+  try { await wikipediaTts(null, nam, o); }
   catch(e) {
     console.error(e);
     return e.message==='No article found'? -2:-4;
@@ -276,7 +276,7 @@ async function upload(db, o) {
   var o = _.merge({}, OPTIONS, o), db = db||o.db;
   db = typeof db==='string'? await setup(db, o):db;
   if(o.log) console.log('-upload:', _.pick(o, ['loop']));
-  for(var i=0, I=o.loop||1; i<I; i++) {
+  for(var i=0, I=o.times||1; i<I; i++) {
     try {
       var row = await getUpload(db, o);
       if(!row) break;
@@ -295,7 +295,7 @@ async function crawl(db, o) {
   db = typeof db==='string'? await setup(db, o):db;
   var status = 1;
   if(o.log) console.log('-crawl:', _.pick(o, ['loop']));
-  for(var i=0, I=o.loop||1; i<I; i++) {
+  for(var i=0, I=o.times||1; i<I; i++) {
     try {
       var row = await getCrawl(db, o);
       if(!row) break;
@@ -330,15 +330,15 @@ function options(o, k, a, i) {
   return i+1;
 };
 
-wikipediatts.setup = setup;
-wikipediatts.get = get;
-wikipediatts.add = add;
-wikipediatts.remove = remove;
-wikipediatts.update = update;
-wikipediatts.upload = upload;
-wikipediatts.crawl = crawl;
-wikipediatts.options = options;
-module.exports = wikipediatts;
+wikipediaTts.setup = setup;
+wikipediaTts.get = get;
+wikipediaTts.add = add;
+wikipediaTts.remove = remove;
+wikipediaTts.update = update;
+wikipediaTts.upload = upload;
+wikipediaTts.crawl = crawl;
+wikipediaTts.options = options;
+module.exports = wikipediaTts;
 
 // Run on shell.
 async function shell(a) {
@@ -346,7 +346,7 @@ async function shell(a) {
     i = options(o, a[i], a, i);
   var cmd = o.command, out = o.output, nam = o.input;
   if(o.help) return cp.execSync('less README.md', {cwd: __dirname, stdio: [0, 1, 2]});
-  if(!COMMANDS.has(cmd)) return wikipediatts(out, nam, o);
+  if(!COMMANDS.has(cmd)) return wikipediaTts(out, nam, o);
   var db = await setup(o.db, o);
   if(cmd==='setup') return;
   else if(cmd==='get') await get(db, nam, o);
