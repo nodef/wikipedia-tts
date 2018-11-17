@@ -136,7 +136,7 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 async function wikipediatts(out, nam, o) {
   var o = o||{}, l = o.log, i = o.input||{};
   var out = out||o.output, nam = nam||o.input;
-  if(l) console.log('@wikipediatts:', out);
+  if(l) console.log('@wikipediatts:', out, nam);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
     i.text||p.content(), i.image||pageThumbImage(p, o),
