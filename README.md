@@ -105,14 +105,8 @@ await wikipediaTts.crawl(db);
 await wikipediaTts.crawl(db, {loop: 10});
 // Crawling done recursively 10 times
 
-await wikipediaTts.crawl(db, {loop: -1});
-// Crawling done recursively indefinitely
-
 await wikipediaTts.upload(db);
 // Highest ranking page is crawled and uploaded to YouTube
-
-await wikipediaTts.upload(db, {loop: -1});
-// Pages are crawled and uploaded to YouTube indefinitely
 ```
 
 
