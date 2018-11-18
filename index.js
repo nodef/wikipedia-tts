@@ -192,6 +192,7 @@ async function getUpload(db, o) {
 async function uploadUnique(nam, o) {
   var o = o||{};
   if(o.log) console.log('-uploadUnique:', nam);
+  nam = OPTIONS.youtube.title.replace(/\$\{title\}/g, nam);
   var ids = await youtubeuploader.lines({title: nam});
   if(ids.length) {
     if(o.log) console.log(' .already exists:', ids);
