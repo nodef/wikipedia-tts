@@ -25,7 +25,7 @@ wikipedia-tts <command> [page] [options]
 # -p, --priority:   set page priority (0)
 # -r, --references: set page references (0)
 # -s, --status:     set page status (0)
-# -t, --times: times to crawl/upload (1)
+# -t, --times:  times to crawl/upload (1)
 # Environment variables:
 # WIKIPEDIATTS_LOG: enable logging (0)
 # WIKIPEDIATTS_DB: crawl database file (crawl.db)
@@ -45,13 +45,13 @@ wikipedia-tts crawl
 # "Plant nutrition" is page links are crawled
 # this is because it is on top priority, references
 
-wikipedia-tts crawl --loop 10
+wikipedia-tts crawl --times 10
 # Crawling done recursively 10 times
 
 wikipedia-tts upload
 # Highest ranking page is crawled and uploaded to YouTube
 
-wikipedia-tts upload --loop 10
+wikipedia-tts upload --times 10
 # Uploading done recursively 10 times
 ```
 
@@ -118,4 +118,7 @@ await wikipediaTts.upload(db, {loop: -1});
 
 [![wikipedia-tts](https://i.imgur.com/Uu0KJ1U.jpg)](https://www.npmjs.com/package/wikipedia-tts)
 
-[@wikipedia-tts/youtube]: https://www.npmjs.com/package/@wikipedia-tts/youtube
+[Node.js]: https://nodejs.org/en/download/
+[console]: https://en.wikipedia.org/wiki/Shell_(computing)#Text_(CLI)_shells
+[extra-googletts]: https://www.npmjs.com/package/extra-googletts
+[extra-youtubeuploader]: https://www.npmjs.com/package/extra-youtubeuploader
