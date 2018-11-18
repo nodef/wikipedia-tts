@@ -102,11 +102,14 @@ await wikipediaTts.crawl(db);
 // "Plant nutrition" is page links are crawled
 // this is because it is on top priority, references
 
-await wikipediaTts.crawl(db, {loop: 10});
+await wikipediaTts.crawl(db, {times: 10});
 // Crawling done recursively 10 times
 
 await wikipediaTts.upload(db);
 // Highest ranking page is crawled and uploaded to YouTube
+
+await wikipediaTts.crawl(db, {times: 10});
+// Uploading done recursively 10 times
 ```
 
 
