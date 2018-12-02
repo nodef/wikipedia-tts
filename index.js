@@ -57,6 +57,16 @@ function fsWriteFile(pth, dat, o) {
   }));
 };
 
+// Execute child process, return promise.
+function cpExec(cmd, o) {
+  var o = o||{}, stdio = o.log? o.stdio||STDIO:o.stdio||[];
+  if(o.log) console.log('-cpExec:', cmd);
+  if(o.stdio==null) return Promise.resolve({stdout: cp.execSync(cmd, {stdio})});
+  return new Promise((fres, frej) => cp.exec(cmd, {stdio}, (err, stdout, stderr) => {
+    return err? frej(err):fres({stdout, stderr});
+  }));
+};
+
 // Make HTTPS GET request.
 function httpsGet(opt) {
   return new Promise((fres, frej) => https.get(opt, (res) => {
@@ -85,6 +95,12 @@ async function audioDuration(pth) {
   var mm = Math.floor((d%3600)/60).toString().padStart(2, '0');
   var ss = Math.floor(d%60).toString().padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
+};
+
+// Join audio files into one.
+function audioJoin(out, auds, o) {
+  if(o.log) console.log('-audioJoin:', out, auds.length);
+  return cpExec(`ffmpeg -y -i "concat:${auds.join('|')}" -acodec ${o.acodec} "${out}"`, o);
 };
 
 // Get page image from wikipedia pageimages API response.
