@@ -128,6 +128,15 @@ async function pageCategories(pag) {
   return z;
 };
 
+// Get table of contents for page.
+async function pageToc(pag) {
+  var reTopic = /\<span class=\"tocnumber\"\>(.*?)\<\/span\>\W*?\<span class=\"toctext\"\>(.*?)\<\/span\>/ig;
+  var top = null, tops = [], html = await pag.html();
+  while((top=reTopic.exec(html))!=null)
+    tops.push(top[1]+' '+top[2]);
+  return tops;
+};
+
 // Get content for page.
 async function pageContent(pag) {
   var txt = await pag.content();
