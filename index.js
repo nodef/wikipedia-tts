@@ -50,6 +50,14 @@ const IMGFORMAT = /\.(png|jpe?g)$/i;
 const FN_NOP = () => 0;
 
 
+// Format time in HH:MM:SS format.
+function timeFormat(t) {
+  var hh = Math.floor(t/3600).toString().padStart(2, '0');
+  var mm = Math.floor((t%3600)/60).toString().padStart(2, '0');
+  var ss = Math.floor(t%60).toString().padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+};
+
 // Write to file, return promise.
 function fsWriteFile(pth, dat, o) {
   return new Promise((fres, frej) => fs.writeFile(pth, dat, o, (err) => {
@@ -90,11 +98,7 @@ async function downloadTemp(url) {
 // Get duration of audio file.
 async function audioDuration(pth) {
   var m = await metadata.parseFile(pth);
-  var d = m.format.duration;
-  var hh = Math.floor(d/3600).toString().padStart(2, '0');
-  var mm = Math.floor((d%3600)/60).toString().padStart(2, '0');
-  var ss = Math.floor(d%60).toString().padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+  return m.format.duration;
 };
 
 // Join audio files into one.
@@ -176,6 +180,22 @@ async function pageLinks(pag) {
   return z;
 };
 
+// Get page table of contents and audio.
+async function pageTocAudio(out, pag, txt, o) {
+  var tops = pageToc(pag), secs = pageSections(txt);
+  var pre = path.basename(out), ext = path.extname(out);
+  for(var i=0, audp=[], I=secs.length; i,I; i++)
+    audp[i] = googletts(`${pre}.${i}${ext}`, secs[i], o);
+  var auds = await Promise.all(audp);
+  for(var i=0, durp=[]; i<I; i++)
+    durp[i] = audioDuration(auds[i]);
+  var durs = await Promise.all(durp);
+  for(var i=0, t=0, toc=''; i<I; i++, t+=durs[i])
+    if(i>0) toc += timeFormat(t)+' '+tops[i-1]+'\n';
+  await audioJoin(out, auds, o);
+  return toc;
+};
+
 // Run sql statement with map and join.
 function sqlRunMapJoin(db, pre, dat, map, sep) {
   for(var i=0, I=dat.length, z= []; i<I; i+=256) {
@@ -202,16 +222,16 @@ async function wikipediaTts(out, nam, o) {
     console.log(' .mainImage:', img);
     console.log(' .description:', description);
   }
-  var val = {title: nam, description, tags};
   var mod = out==null? 2:(isVideo(out)? 1:0);
   var imgf = img.includes('://')? await downloadTemp(img):img;
   var audf = mod>=1? tempy.file({extension: 'mp3'}):out;
   var vidf = mod>=2? tempy.file({extension: 'mp4'}):out;
   var capf = mod>=2? tempy.file({extension: 'txt'}):null;
   var metf = mod>=2? tempy.file({extension: '.json'}):null;
-  if(mod>=0) await googletts(audf, txt, Object.assign({log: l}, o.audio));
+  if(mod>=0) var toc = await pageTocAudio(audf, p, txt, Object.assign({log: l}, o.audio));
   if(mod>=1) await stillvideo(vidf, audf, imgf, Object.assign({log: l}, o.video));
   if(mod>=2) await fsWriteFile(capf, txt);
+  var val = {title: nam, description, tags, toc};
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
   if(mod>=2) await youtubeuploader(Object.assign({log: l, video: vidf, caption: capf, meta: metf}, o.youtube));
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
