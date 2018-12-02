@@ -2,6 +2,7 @@
 const youtubeuploader = require('extra-youtubeuploader');
 const stillvideo = require('extra-stillvideo');
 const googletts = require('extra-googletts');
+const metadata = require('music-metadata');
 const wiki = require('wikijs').default;
 const download = require('download');
 const isVideo = require('is-video');
@@ -74,6 +75,16 @@ async function downloadTemp(url) {
   var pth = tempy.file({extension: ext.substring(1)});
   await download(url, path.dirname(pth), {filename: path.basename(pth)});
   return pth;
+};
+
+// Get duration of audio file.
+async function audioDuration(pth) {
+  var m = await metadata.parseFile(pth);
+  var d = m.format.duration;
+  var hh = Math.floor(d/3600).toString().padStart(2, '0');
+  var mm = Math.floor((d%3600)/60).toString().padStart(2, '0');
+  var ss = Math.floor(d%60).toString().padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
 };
 
 // Get page image from wikipedia pageimages API response.
