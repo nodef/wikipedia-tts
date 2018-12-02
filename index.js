@@ -238,7 +238,7 @@ async function setup(pth, o) {
 async function get(db, nam, o) {
   var o = _.merge({}, OPTIONS, o), db = db||o.db;
   db = typeof db==='string'? await setup(db, o):db;
-  var nam = nam||o.input;
+  var nam = nam||o.input||(await getUpload(db, o)).title;
   if(o.log) console.log('-get:', nam);
   var row = await db.get('SELECT * "pages" WHERE "title" = ? LIMIT 1', nam);
   if(o.log) console.log(' .row:', row);
@@ -259,7 +259,7 @@ async function add(db, nam, o) {
 async function remove(db, nam, o) {
   var o = _.merge({}, OPTIONS, o), db = db||o.db;
   db = typeof db==='string'? await setup(db, o):db;
-  var nam = nam||o.input;
+  var nam = nam||o.input||(await getUpload(db, o)).title;
   if(o.log) console.log('-remove:', nam);
   await db.run('DELETE FROM "pages" WHERE "title" = ?', nam);
   return nam;
@@ -269,7 +269,8 @@ async function remove(db, nam, o) {
 async function update(db, nam, o) {
   var o = _.merge({}, OPTIONS, o), db = db||o.db;
   db = typeof db==='string'? await setup(db, o):db;
-  var nam = nam||o.input, v = _.pick(o, ['priority', 'references', 'status']);
+  var nam = nam||o.input||(await getUpload(db, o)).title;
+  var v = _.pick(o, ['priority', 'references', 'status']);
   if(o.log) console.log('-update:', nam, v);
   var val = {$title: nam};
   for(var k in v) val['$'+k] = v[k];
