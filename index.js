@@ -2,7 +2,6 @@
 const youtubeuploader = require('extra-youtubeuploader');
 const stillvideo = require('extra-stillvideo');
 const googletts = require('extra-googletts');
-const metadata = require('music-metadata');
 const wiki = require('wikijs').default;
 const download = require('download');
 const isVideo = require('is-video');
@@ -50,28 +49,10 @@ const IMGFORMAT = /\.(png|jpe?g)$/i;
 const FN_NOP = () => 0;
 
 
-// Format time in HH:MM:SS format.
-function timeFormat(t) {
-  var hh = Math.floor(t/3600).toString().padStart(2, '0');
-  var mm = Math.floor((t%3600)/60).toString().padStart(2, '0');
-  var ss = Math.floor(t%60).toString().padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
-};
-
 // Write to file, return promise.
 function fsWriteFile(pth, dat, o) {
   return new Promise((fres, frej) => fs.writeFile(pth, dat, o, (err) => {
     return err? frej(err):fres(pth);
-  }));
-};
-
-// Execute child process, return promise.
-function cpExec(cmd, o) {
-  var o = o||{}, stdio = o.log? o.stdio||STDIO:o.stdio||[];
-  if(o.log) console.log('-cpExec:', cmd);
-  if(o.stdio==null) return Promise.resolve({stdout: cp.execSync(cmd, {stdio})});
-  return new Promise((fres, frej) => cp.exec(cmd, {stdio}, (err, stdout, stderr) => {
-    return err? frej(err):fres({stdout, stderr});
   }));
 };
 
@@ -93,18 +74,6 @@ async function downloadTemp(url) {
   var pth = tempy.file({extension: ext.substring(1)});
   await download(url, path.dirname(pth), {filename: path.basename(pth)});
   return pth;
-};
-
-// Get duration of audio file.
-async function audioDuration(pth) {
-  var m = await metadata.parseFile(pth);
-  return m.format.duration;
-};
-
-// Join audio files into one.
-function audioJoin(out, auds, o) {
-  if(o.log) console.log('-audioJoin:', out, auds.length);
-  return cpExec(`ffmpeg -y -i "concat:${auds.join('|')}" -acodec ${o.acodec} "${out}"`, o);
 };
 
 // Get page image from wikipedia pageimages API response.
@@ -163,17 +132,6 @@ async function pageContent(pag) {
   return txt.replace(/\W*==\W*references\W*==[\s\S]*/i, '');
 };
 
-// Get sections for page content.
-function pageSections(txt) {
-  var reTopic = /(=+)\s+(.*?)\s+\1/g;
-  for(var i=0, top=null, secs=[]; (top=reTopic.exec(txt))!=null;) {
-    secs.push(txt.substring(i, top.index));
-    i = top.index;
-  }
-  secs.push(txt.substring(i));
-  return secs;
-};
-
 // Get forward links for page.
 async function pageLinks(pag) {
   var z = await pag.links();
@@ -182,17 +140,10 @@ async function pageLinks(pag) {
 
 // Get page table of contents and audio.
 async function pageTocAudio(out, pag, txt, o) {
-  var tops = pageToc(pag), secs = pageSections(txt);
-  var pre = path.basename(out), ext = path.extname(out);
-  for(var i=0, audp=[], I=secs.length; i,I; i++)
-    audp[i] = googletts(`${pre}.${i}${ext}`, secs[i], o);
-  var auds = await Promise.all(audp);
-  for(var i=0, durp=[]; i<I; i++)
-    durp[i] = audioDuration(auds[i]);
-  var durs = await Promise.all(durp);
-  for(var i=0, t=0, toc=''; i<I; i++, t+=durs[i])
-    if(i>0) toc += timeFormat(t)+' '+tops[i-1]+'\n';
-  await audioJoin(out, auds, o);
+  var tops = await pageToc(pag), toc = '';
+  var tt = await googletts(out, txt, o);
+  for(var i=0, I=tt.length; i<I; i++)
+    if(i>0) toc += tt[i].time+' '+tops[i-1]+'\n';
   return toc;
 };
 
@@ -207,7 +158,7 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
-  var o = o||{}, l = o.log, i = o.input||{};
+  var o = _.merge(OPTIONS, o), l = o.log, i = o.input||{};
   var out = out||o.output, nam = nam||o.input;
   if(l) console.log('@wikipediatts:', out, nam);
   var p = await wiki().page(nam);

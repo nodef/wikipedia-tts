@@ -1,6 +1,10 @@
 This is an audio version of the Wikipedia Article:
 ${title}
 
+
+${toc}
+
+
 Listening is a more natural way of learning, when compared to reading. Written language only began at around 3200 BC, but spoken language has existed long ago.
 
 Learning by listening is a great way to:
