@@ -117,6 +117,12 @@ async function pageCategories(pag) {
   return z;
 };
 
+// Get content for page.
+async function pageContent(pag) {
+  var txt = await pag.content();
+  return txt.replace(/\W*==\W*references\W*==[\s\S]*/i, '');
+};
+
 // Get forward links for page.
 async function pageLinks(pag) {
   var z = await pag.links();
@@ -139,7 +145,7 @@ async function wikipediaTts(out, nam, o) {
   if(l) console.log('@wikipediatts:', out, nam);
   var p = await wiki().page(nam);
   var [txt, img, tags, description] = await Promise.all([
-    i.text||p.content(), i.image||pageThumbImage(p, o),
+    i.text||pageContent(p), i.image||pageThumbImage(p, o),
     i.tags||pageCategories(p), i.description||p.summary()
   ]);
   if(!tags.includes(nam)) tags.unshift(nam);
