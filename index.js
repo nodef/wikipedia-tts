@@ -159,6 +159,17 @@ async function pageContent(pag) {
   return txt.replace(/\W*==\W*references\W*==[\s\S]*/i, '');
 };
 
+// Get sections for page content.
+function pageSections(txt) {
+  var reTopic = /(=+)\s+(.*?)\s+\1/g;
+  for(var i=0, top=null, secs=[]; (top=reTopic.exec(txt))!=null;) {
+    secs.push(txt.substring(i, top.index));
+    i = top.index;
+  }
+  secs.push(txt.substring(i));
+  return secs;
+};
+
 // Get forward links for page.
 async function pageLinks(pag) {
   var z = await pag.links();
