@@ -1,6 +1,6 @@
 Crawl Wikipedia pages and upload TTS to YouTube.
 > Do you want to:
-> - Upload Wikipedia TTS videos on YouTube?
+> - [Upload Wikipedia TTS videos on YouTube]?
 <br>
 
 
@@ -114,6 +114,8 @@ await wikipediaTts.crawl(db, {times: 10});
 
 
 [![wikipedia-tts](https://i.imgur.com/Uu0KJ1U.jpg)](https://www.npmjs.com/package/wikipedia-tts)
+
+[Upload Wikipedia TTS videos on YouTube]: https://www.youtube.com/results?search_query=wikipedia+audio+article
 
 [Node.js]: https://nodejs.org/en/download/
 [console]: https://en.wikipedia.org/wiki/Shell_(computing)#Text_(CLI)_shells
