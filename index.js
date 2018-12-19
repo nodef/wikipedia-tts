@@ -161,7 +161,7 @@ async function wikipediaTts(out, nam, o) {
   var o = _.merge(OPTIONS, o), l = o.log, i = o.input||{};
   var out = out||o.output, nam = nam||o.input;
   if(l) console.log('@wikipediatts:', out, nam);
-  var p = await wiki().page(nam);
+  var p = await wiki().page(nam), {fullurl} = p.raw;
   var [txt, img, tags, description] = await Promise.all([
     i.text||pageContent(p), i.image||pageThumbImage(p, o),
     i.tags||pageCategories(p), i.description||p.summary()
@@ -182,7 +182,7 @@ async function wikipediaTts(out, nam, o) {
   if(mod>=0) var toc = await pageTocAudio(audf, p, txt, Object.assign({log: l}, o.audio));
   if(mod>=1) await stillvideo(vidf, audf, imgf, Object.assign({log: l}, o.video));
   if(mod>=2) await fsWriteFile(capf, txt);
-  var val = {title: nam, description, tags, toc};
+  var val = {title: nam, fullurl, description, tags, toc};
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
   if(mod>=2) await youtubeuploader(Object.assign({log: l, video: vidf, caption: capf, meta: metf}, o.youtube));
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
