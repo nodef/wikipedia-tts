@@ -143,7 +143,7 @@ async function pageTocAudio(out, pag, txt, o) {
   var tops = await pageToc(pag), toc = '';
   var tt = await googletts(out, txt, o);
   for(var i=0, I=tt.length; i<I; i++)
-    if(i>0) toc += tt[i].time+' '+tops[i-1]+'\n';
+    if(i>0) toc += tt[i].time+' '+(tops[i-1]||tt[i].title)+'\n';
   return toc;
 };
 
