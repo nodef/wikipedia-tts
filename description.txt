@@ -16,10 +16,11 @@ Learning by listening is a great way to:
 
 Now learn the vast amount of general knowledge available on Wikipedia through audio (audio article). You could even learn subconsciously by playing the audio while you are sleeping! If you are planning to listen a lot, you could try using a bone conduction headphone, or a standard speaker instead of an earphone.
 
-You can find other Wikipedia audio articles too at:
-https://www.youtube.com/channel/UCuKfABj2eGyjH3ntPxp4YeQ
-
-You can upload your own Wikipedia articles through:
+Listen on Google Assistant through Extra Audio:
+https://assistant.google.com/services/invoke/uid/0000001a130b3f91
+Other Wikipedia audio articles at:
+https://www.youtube.com/results?search_query=wikipedia+tts
+Upload your own Wikipedia articles through:
 https://github.com/nodef/wikipedia-tts
 
 
