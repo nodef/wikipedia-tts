@@ -23,7 +23,7 @@ https://www.youtube.com/results?search_query=wikipedia+tts
 Upload your own Wikipedia articles through:
 https://github.com/nodef/wikipedia-tts
 Speaking Rate: ${audio.audioConfig.speakingRate}
-Voice name: ${audio.audioConfig.voice.name}
+Voice name: ${audio.voice.name}
 
 
 "I cannot teach anybody anything, I can only make them think."
