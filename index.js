@@ -156,6 +156,16 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
   return Promise.all(z);
 };
 
+// Randomize audio options.
+function audioRandom(o) {
+  var o = Object.assign({}, o), ac = o.audioConfig||{}, v = o.voice||{};
+  if(!ac.speakingRate) { o.audioConfig = ac; ac.speakingRate = 0.5+0.5*Math.random(); }
+  if(!o.voice || (v.languageCode==='en-US' && !v.ssmlGender && !v.name)) {
+    o.voice = v; v.name = 'en-US-Wavenet-'+String.fromCharCode(65+Math.floor(4*Math.random()));
+  }
+  return o;
+};
+
 // Upload Wikipedia page TTS to Youtube.
 async function wikipediaTts(out, nam, o) {
   var o = _.merge(OPTIONS, o), l = o.log, i = o.input||{};
@@ -179,10 +189,11 @@ async function wikipediaTts(out, nam, o) {
   var vidf = mod>=2? tempy.file({extension: 'mp4'}):out;
   var capf = mod>=2? tempy.file({extension: 'txt'}):null;
   var metf = mod>=2? tempy.file({extension: '.json'}):null;
-  if(mod>=0) var toc = await pageTocAudio(audf, p, txt, Object.assign({log: l}, o.audio));
+  var oaud = audioRandom(Object.assign({log: l}, o.audio));
+  if(mod>=0) var toc = await pageTocAudio(audf, p, txt, oaud);
   if(mod>=1) await stillvideo(vidf, audf, imgf, Object.assign({log: l}, o.video));
   if(mod>=2) await fsWriteFile(capf, txt);
-  var val = {title: nam, fullurl, description, tags, toc};
+  var val = {title: nam, fullurl, description, tags, toc, audio: oaud};
   if(mod>=2) await fsWriteFile(metf, JSON.stringify(val));
   if(mod>=2) await youtubeuploader(Object.assign({log: l, video: vidf, caption: capf, meta: metf}, o.youtube));
   if(imgf!==img) fs.unlink(imgf, FN_NOP);
