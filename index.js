@@ -41,6 +41,11 @@ const VALUE = {
   references: parseInt(E['WIKIPEDIATTS_REFERENCES']||'0', 10),
   status: parseInt(E['WIKIPEDIATTS_STATUS']||'0', 10)
 };
+const AUDIO_VOICENAME = [
+  'en-AU-Wavenet-A', 'en-AU-Wavenet-B', 'en-AU-Wavenet-C', 'en-AU-Wavenet-D',
+  'en-GB-Wavenet-A', 'en-GB-Wavenet-B', 'en-GB-Wavenet-C', 'en-GB-Wavenet-D',
+  'en-US-Wavenet-A', 'en-US-Wavenet-B', 'en-US-Wavenet-C', 'en-US-Wavenet-D', 'en-US-Wavenet-E', 'en-US-Wavenet-F'
+];
 const CATEGORY_EXC = /wikipedia|webarchive|infocard|infobox|chembox|article|page|dmy|cs1|[^\w\s\(\)]/i;
 const PAGEIMAGES_URL = 'https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=';
 const BLANKIMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Wikipedia-logo-blank.svg/1000px-Wikipedia-logo-blank.svg.png';
@@ -48,6 +53,11 @@ const COMMANDS = new Set(['setup', 'get', 'add', 'remove', 'update', 'upload', '
 const IMGFORMAT = /\.(png|jpe?g)$/i;
 const FN_NOP = () => 0;
 
+
+// Get random item from array.
+function randomItem(arr) {
+  return arr[Math.floor(arr.length*Math.random())];
+};
 
 // Write to file, return promise.
 function fsWriteFile(pth, dat, o) {
@@ -160,8 +170,8 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 function audioRandom(o) {
   var o = Object.assign({}, o), ac = o.audioConfig||{}, v = o.voice||{};
   if(!ac.speakingRate) { o.audioConfig = ac; ac.speakingRate = 0.5+0.5*Math.random(); }
-  if(!o.voice || (v.languageCode==='en-US' && !v.ssmlGender && !v.name)) {
-    o.voice = v; v.name = 'en-US-Wavenet-'+String.fromCharCode(65+Math.floor(4*Math.random()));
+  if(!o.voice || (!v.languageCode && !v.ssmlGender && !v.name)) {
+    o.voice = v; v.name = randomItem(AUDIO_VOICENAME);
   }
   return o;
 };
