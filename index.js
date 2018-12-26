@@ -169,7 +169,7 @@ function sqlRunMapJoin(db, pre, dat, map, sep) {
 // Randomize audio options.
 function audioRandom(o) {
   var o = Object.assign({}, o), ac = o.audioConfig||{}, v = o.voice||{};
-  if(!ac.speakingRate) { o.audioConfig = ac; ac.speakingRate = 0.5+0.5*Math.random(); }
+  if(!ac.speakingRate) { o.audioConfig = ac; ac.speakingRate = 0.7+0.3*Math.random(); }
   if(!o.voice || (!v.languageCode && !v.ssmlGender && !v.name)) {
     o.voice = v; v.name = randomItem(AUDIO_VOICENAME);
   }
