@@ -1,6 +1,6 @@
 {
   "name": "wikipedia-tts",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "description": "Crawl Wikipedia pages and upload TTS to Youtube.",
   "main": "index.js",
   "scripts": {
@@ -33,16 +33,16 @@
   },
   "homepage": "https://github.com/nodef/wikipedia-tts#readme",
   "dependencies": {
-    "boolean": "^1.0.0",
+    "boolean": "^3.0.1",
     "download": "^7.1.0",
     "extra-ffmpeg": "^4.0.3",
     "extra-googletts": "^1.6.19",
-    "extra-stillvideo": "^1.2.5",
+    "extra-stillvideo": "^1.2.6",
     "extra-youtubeuploader": "^19.6.0",
     "is-video": "^1.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "sqlite": "^3.0.3",
-    "tempy": "^0.3.0",
+    "tempy": "^0.5.0",
     "wikijs": "^4.10.2"
   }
 }
