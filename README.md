@@ -117,6 +117,8 @@ await wikipediaTts.crawl(db, {times: 10});
 
 [Upload Wikipedia TTS videos on YouTube]: https://www.youtube.com/results?search_query=wikipedia+audio+article
 
+![](https://ga-beacon.deno.dev/G-RC63DPBH3P:SH3Eq-NoQ9mwgYeHWxu7cw/github.com/nodef/wikipedia-tts)
+
 [Node.js]: https://nodejs.org/en/download/
 [console]: https://en.wikipedia.org/wiki/Shell_(computing)#Text_(CLI)_shells
 [extra-googletts]: https://www.npmjs.com/package/extra-googletts
